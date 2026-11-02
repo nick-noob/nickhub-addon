@@ -2,6 +2,11 @@ name = "nickhub"
 main = "src/worker.js"
 compatibility_date = "2026-10-01"
 
+# Serves the Worker on your domain once nickhub.com is on Cloudflare DNS
+routes = [
+  { pattern = "nickhub.com", custom_domain = true }
+]
+
 # Serve the dashboard from ./public; /api/* falls through to the Worker
 [assets]
 directory = "./public"
@@ -11,9 +16,4 @@ run_worker_first = ["/api/*"]
 # Created with: npx wrangler kv namespace create NICKHUB  (paste the id it prints)
 [[kv_namespaces]]
 binding = "NICKHUB"
-id = "PASTE_KV_NAMESPACE_ID_HERE"
-
-# Serves the Worker on your domain once nickhub.com is on Cloudflare DNS
-routes = [
-  { pattern = "nickhub.com", custom_domain = true }
-]
+id = "c7fb2934feaf4d398ef9c21b72036633"
