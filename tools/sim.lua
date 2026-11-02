@@ -36,17 +36,17 @@ end
 unpack = table.unpack
 
 -- ---------- player state ----------
-local P = { level = 1, xp = 0, money = 0, zone = "Dun Morogh", combat = false }
+local P = { level = 1, xp = 0, money = 0, zone = "Durotar", combat = false }
 local XPMAX = {}
 for l = 1, 60 do XPMAX[l] = math.floor(400 + (l - 1) * 180 + (l ^ 2.35) * 9) end
 local PLAYER_GUID = "Player-4395-0A1B2C3D"
 local PET_GUID = "Pet-0-4395-0-1-1234-0100ABCD"
 
-function UnitName(u) if u == "player" then return "Nickhunt" end return units[u] and units[u].name end
+function UnitName(u) if u == "player" then return "Shrim Pina" end return units[u] and units[u].name end
 function GetRealmName() return "Forever" end
 function UnitClass() return "Hunter", "HUNTER" end
-function UnitRace() return "Dwarf", "Dwarf" end
-function UnitFactionGroup() return "Alliance" end
+function UnitRace() return "Orc", "Orc" end
+function UnitFactionGroup() return "Horde" end
 function UnitLevel(u) if u == "player" then return P.level end return units[u] and units[u].level end
 function UnitXP() return P.xp end
 function UnitXPMax() return XPMAX[P.level] or 0 end
@@ -103,11 +103,11 @@ advance(5)
 
 -- ---------- world data ----------
 local ZONES = {
-  { 1, "Dun Morogh", { { "Rockjaw Trogg", "Humanoid" }, { "Ragged Young Wolf", "Beast" }, { "Frostmane Troll Whelp", "Humanoid" }, { "Small Crag Boar", "Beast" } } },
-  { 10, "Loch Modan", { { "Tunnel Rat Kobold", "Humanoid" }, { "Mountain Boar", "Beast" }, { "Stonesplinter Trogg", "Humanoid" }, { "Elder Black Bear", "Beast" } } },
-  { 18, "Westfall", { { "Defias Pillager", "Humanoid" }, { "Harvest Golem", "Mechanical" }, { "Fleshripper", "Beast" }, { "Coyote Packleader", "Beast" } } },
-  { 21, "Wetlands", { { "Mottled Raptor", "Beast" }, { "Dragonmaw Grunt", "Humanoid" }, { "Bluegill Murloc", "Humanoid" }, { "Black Ooze", "Elemental" } } },
-  { 28, "Hillsbrad Foothills", { { "Syndicate Rogue", "Humanoid" }, { "Gray Bear", "Beast" }, { "Hillsbrad Farmhand", "Humanoid" }, { "Torn Fin Tidehunter", "Humanoid" } } },
+  { 1, "Durotar", { { "Mottled Boar", "Beast" }, { "Vile Familiar", "Demon" }, { "Scorpid Worker", "Beast" }, { "Razormane Quilboar", "Humanoid" } } },
+  { 10, "The Barrens", { { "Zhevra Runner", "Beast" }, { "Sunscale Lashtail", "Beast" }, { "Razormane Thornweaver", "Humanoid" }, { "Kolkar Bloodcharger", "Humanoid" } } },
+  { 18, "Stonetalon Mountains", { { "Venture Co. Logger", "Humanoid" }, { "Deepmoss Creeper", "Beast" }, { "Bloodfury Roguefeather", "Humanoid" }, { "Venture Co. Operator", "Mechanical" } } },
+  { 21, "Ashenvale", { { "Ghostpaw Runner", "Beast" }, { "Thistlefur Avenger", "Humanoid" }, { "Foulweald Warrior", "Humanoid" }, { "Befouled Water Elemental", "Elemental" } } },
+  { 28, "Thousand Needles", { { "Galak Scout", "Humanoid" }, { "Highperch Wyvern", "Beast" }, { "Grimtotem Geomancer", "Humanoid" }, { "Sparkleshell Tortoise", "Beast" } } },
   { 32, "Stranglethorn Vale", { { "Young Stranglethorn Tiger", "Beast" }, { "Kurzen Jungle Fighter", "Humanoid" }, { "Bloodscalp Warrior", "Humanoid" }, { "Jungle Stalker", "Beast" } } },
   { 38, "Arathi Highlands", { { "Witherbark Troll", "Humanoid" }, { "Highland Thrasher", "Beast" }, { "Boulderfist Ogre", "Giant" }, { "Feral Mountain Lion", "Beast" } } },
   { 42, "Tanaris", { { "Wastewander Bandit", "Humanoid" }, { "Sandfury Hideskinner", "Humanoid" }, { "Scorpid Reaver", "Beast" }, { "Dunemaul Ogre", "Giant" } } },
@@ -152,13 +152,13 @@ local function killMob()
   fire("PLAYER_TARGET_CHANGED")
   P.combat = true
   local petBlow = math.random() < 0.45
-  cleu = { 0, "RANGE_DAMAGE", false, PLAYER_GUID, "Nickhunt", 0x511, 0, guid, mob[1], 0xa48, 0 }
+  cleu = { 0, "RANGE_DAMAGE", false, PLAYER_GUID, "Shrim Pina", 0x511, 0, guid, mob[1], 0xa48, 0 }
   fire("COMBAT_LOG_EVENT_UNFILTERED")
   if petBlow then
     cleu = { 0, "SWING_DAMAGE", false, PET_GUID, "Bruno", 0x1111, 0, guid, mob[1], 0xa48, 0 }
     fire("COMBAT_LOG_EVENT_UNFILTERED")
   end
-  cleu = { 0, "SWING_DAMAGE", false, guid, mob[1], 0xa48, 0, PLAYER_GUID, "Nickhunt", 0x511, 0 }
+  cleu = { 0, "SWING_DAMAGE", false, guid, mob[1], 0xa48, 0, PLAYER_GUID, "Shrim Pina", 0x511, 0 }
   fire("COMBAT_LOG_EVENT_UNFILTERED")
   advance(math.random(8, 20))
   local xp = math.floor((P.level * 5 + 45) * (1 + (mlvl - P.level) * 0.05))
@@ -195,7 +195,7 @@ end
 local function die()
   local z = zoneFor(P.level)
   local mob = z[3][math.random(#z[3])]
-  cleu = { 0, "SWING_DAMAGE", false, "Creature-0-1-0-1-99-1", mob[1], 0xa48, 0, PLAYER_GUID, "Nickhunt", 0x511, 0 }
+  cleu = { 0, "SWING_DAMAGE", false, "Creature-0-1-0-1-99-1", mob[1], 0xa48, 0, PLAYER_GUID, "Shrim Pina", 0x511, 0 }
   fire("COMBAT_LOG_EVENT_UNFILTERED")
   fire("PLAYER_DEAD")
   advance(math.random(60, 150))
