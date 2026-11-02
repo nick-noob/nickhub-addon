@@ -3,63 +3,68 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NickHub Leveling Tracker</title>
-<meta name="claude:viewport-fit-sides" content="cover">
+<title>NickHub · Road to 60</title>
+<meta name="description" content="Live tracker for a WoW Forever 1–60 run: levels, kills, quests, deaths and every zone along the way.">
+<meta name="theme-color" content="#0e100f" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f3efe3" media="(prefers-color-scheme: light)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230e100f'/%3E%3Cpath d='M16 4l10 12-10 12L6 16z' fill='none' stroke='%23e3b85c' stroke-width='2.5'/%3E%3Cpath d='M16 11l4.2 5-4.2 5-4.2-5z' fill='%23e3b85c'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="chart.umd.min.js"></script>
 <style>
 :root {
   color-scheme: light;
-  --bg: #eef0ea;
-  --surface: #fcfcfb;
-  --surface-2: #e8ebe3;
-  --border: #d9ddd2;
-  --text: #1b1915;
-  --text-2: #52514e;
-  --muted: #7a776f;
-  --accent: #9a6b12;          /* hunter gold, used for headings/progress only */
-  --accent-soft: #f3e3bf;
+  --bg: #f3efe3;
+  --surface: #fbf9f2;
+  --surface-2: #e9e4d5;
+  --border: #d8d2c0;
+  --text: #1d1b16;
+  --text-2: #4f4c43;
+  --muted: #736f62;
+  --gold: #8a5f0e;
+  --gold-soft: #f0e0b8;
+  --class-ink: #5d7f2e;       /* replaced from the character's class at render */
   --series-1: #2a78d6;
-  --series-2: #eb6834;
-  --series-3: #1baf7a;
-  --grid: #e3e6de;
-  --critical: #d03b3b;
-  --good: #0ca30c;
+  --series-2: #d4571f;
+  --grid: #e2dccb;
+  --critical: #c23232;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --bg: #12110f;
-    --surface: #1a1a19;
-    --surface-2: #232220;
-    --border: #2f2d29;
-    --text: #f0efec;
-    --text-2: #c3c2b7;
-    --muted: #8f8d85;
-    --accent: #e0b25a;
-    --accent-soft: #3a2f18;
+    --bg: #0e100f;
+    --surface: #161917;
+    --surface-2: #222622;
+    --border: #2c312c;
+    --text: #f2efe6;
+    --text-2: #c4c2b4;
+    --muted: #8e8c80;
+    --gold: #e3b85c;
+    --gold-soft: #3a2f18;
+    --class-ink: #abd473;
     --series-1: #3987e5;
-    --series-2: #d95926;
-    --series-3: #199e70;
-    --grid: #2a2926;
+    --series-2: #e0692f;
+    --grid: #262a26;
+    --critical: #ec6a5e;
   }
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg: #12110f;
-  --surface: #1a1a19;
-  --surface-2: #232220;
-  --border: #2f2d29;
-  --text: #f0efec;
-  --text-2: #c3c2b7;
-  --muted: #8f8d85;
-  --accent: #e0b25a;
-  --accent-soft: #3a2f18;
+  --bg: #0e100f;
+  --surface: #161917;
+  --surface-2: #222622;
+  --border: #2c312c;
+  --text: #f2efe6;
+  --text-2: #c4c2b4;
+  --muted: #8e8c80;
+  --gold: #e3b85c;
+  --gold-soft: #3a2f18;
+  --class-ink: #abd473;
   --series-1: #3987e5;
-  --series-2: #d95926;
-  --series-3: #199e70;
-  --grid: #2a2926;
+  --series-2: #e0692f;
+  --grid: #262a26;
+  --critical: #ec6a5e;
 }
 * { box-sizing: border-box; }
 body {
@@ -67,71 +72,127 @@ body {
   font: 15px/1.5 "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
 }
-.wrap { max-width: 1120px; margin: 0 auto; padding-block: 24px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
-header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; margin-bottom: 20px; }
-.eyebrow { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 4px; }
-h1 { text-wrap: balance; font-family: Cinzel, Georgia, serif; font-size: clamp(28px, 5vw, 40px); line-height: 1.1; margin: 0; letter-spacing: .01em; }
-h1 .lvl { color: var(--accent); }
-.sub { color: var(--text-2); margin-top: 4px; }
-.meta { text-align: right; color: var(--muted); font-size: 13px; }
-.meta select { font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; margin-top: 6px; }
-.banner { background: var(--accent-soft); color: var(--text); border-radius: 10px; padding: 10px 14px; font-size: 14px; margin-bottom: 16px; display: none; }
-.xpbar { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; }
-.xpbar .row { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-2); margin-bottom: 8px; gap: 12px; }
-.track { height: 10px; border-radius: 5px; background: var(--surface-2); overflow: hidden; position: relative; }
-.fill { height: 100%; background: var(--accent); border-radius: 5px; }
-.rested { position: absolute; top: 0; height: 100%; background: var(--series-1); opacity: .35; }
-.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 16px; }
-.tile { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
-.tile .k { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
-.tile .v { font-size: 26px; font-weight: 600; margin-top: 2px; font-variant-numeric: tabular-nums; }
-.tile .s { font-size: 12px; color: var(--text-2); }
+.wrap { max-width: 1120px; margin: 0 auto; padding-block: 16px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+/* top bar */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+.brand { display: flex; align-items: center; gap: 8px; font-family: Cinzel, Georgia, serif; font-weight: 700; font-size: 17px; letter-spacing: .04em; color: var(--text); }
+.brand svg { width: 16px; height: 16px; color: var(--gold); flex: none; }
+.status { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; min-width: 0; }
+.status select { font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 5px 8px; max-width: 170px; }
+.banner { background: var(--gold-soft); color: var(--text); border-radius: 8px; padding: 9px 14px; font-size: 14px; margin-top: 14px; display: none; }
+
+/* hero */
+.hero { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 0 24px; padding: 36px 0 22px; }
+.eyebrow { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); margin: 0 0 8px; font-weight: 500; }
+h1 { font-family: Cinzel, Georgia, serif; font-weight: 700; font-size: clamp(38px, 9vw, 76px); line-height: 1; margin: 0; letter-spacing: .005em; overflow-wrap: anywhere; }
+.sub { color: var(--text-2); margin: 10px 0 0; font-size: 16px; }
+.lvl { text-align: right; line-height: 1; }
+.lvl small { display: block; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
+.lvl b { font-family: Cinzel, Georgia, serif; font-weight: 700; font-size: clamp(64px, 16vw, 132px); line-height: .9; color: var(--class-ink); font-variant-numeric: lining-nums; }
+
+/* road to 60 */
+.road { display: grid; grid-template-columns: repeat(60, minmax(0, 1fr)); gap: 2px; height: 26px; }
+.road i { background: var(--surface-2); border-radius: 1px; position: relative; overflow: hidden; }
+.road i.on { background: var(--class-ink); }
+.road i.mark:not(.on) { background: var(--border); }
+.road i u { position: absolute; inset: auto 0 0 0; background: var(--class-ink); display: block; }
+.ticks { position: relative; height: 20px; margin-top: 5px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.ticks span { position: absolute; transform: translateX(-50%); }
+.ticks span:first-child { transform: none; }
+.ticks span:last-child { transform: translateX(-100%); }
+.xp { margin-top: 12px; }
+.xp .row { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; color: var(--text-2); margin-bottom: 6px; font-variant-numeric: tabular-nums; }
+.track { height: 6px; border-radius: 3px; background: var(--surface-2); overflow: hidden; position: relative; }
+.fill { height: 100%; background: var(--gold); border-radius: 3px; }
+.rested { position: absolute; top: 0; height: 100%; background: var(--series-1); opacity: .45; }
+
+/* stat strip: hairlines come from the 1px gap showing the border colour */
+.stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin: 24px 0 12px; }
+@media (min-width: 620px) { .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (min-width: 980px) { .stats { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+.stat { background: var(--surface); padding: 12px 16px; min-width: 0; }
+.stat .k { font-size: 12px; color: var(--muted); }
+.stat .v { font-size: 25px; font-weight: 600; line-height: 1.25; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stat .s { font-size: 12px; color: var(--text-2); min-height: 18px; }
+
+/* records */
+.records { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 12px; }
+.rec { padding: 12px 16px; border-left: 2px solid var(--gold); min-width: 0; }
+.rec .k { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.rec .v { font-family: Cinzel, Georgia, serif; font-weight: 600; font-size: 19px; line-height: 1.3; margin-top: 2px; overflow-wrap: anywhere; }
+.rec .s { font-size: 13px; color: var(--text-2); }
+
+/* cards */
 .grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 12px; }
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; min-width: 0; grid-column: span 12; }
 @media (min-width: 860px) { .span-7 { grid-column: span 7; } .span-5 { grid-column: span 5; } .span-6 { grid-column: span 6; } }
-.card h2 { font-size: 15px; margin: 0 0 2px; font-weight: 600; }
+.card h2 { font-family: Cinzel, Georgia, serif; font-size: 17px; line-height: 1.3; margin: 0 0 2px; font-weight: 600; }
 .card .hint { font-size: 13px; color: var(--muted); margin: 0 0 12px; }
 .chart { position: relative; height: 260px; }
+.chart.none canvas { display: none; }
+.chart.none { height: auto; }
+.chart.none::after { content: attr(data-msg); display: block; color: var(--muted); font-size: 14px; padding: 12px 0; }
 .legend { display: flex; gap: 16px; font-size: 13px; color: var(--text-2); margin: -4px 0 8px; }
 .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+
+/* tables */
 table { width: 100%; border-collapse: collapse; font-size: 14px; }
-th { text-align: left; font-weight: 500; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; padding: 6px 8px; border-bottom: 1px solid var(--border); }
-td { padding: 7px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+th { text-align: left; font-weight: 500; color: var(--muted); font-size: 12px; padding: 6px 8px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--surface); }
+td { padding: 7px 8px; border-bottom: 1px solid var(--border); vertical-align: top; overflow-wrap: anywhere; }
 tr:last-child td { border-bottom: 0; }
-td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
+td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; overflow-wrap: normal; }
 .scroll { max-height: 340px; overflow: auto; }
 .pill { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 999px; background: var(--surface-2); color: var(--text-2); }
+.note { font-size: 12px; color: var(--muted); }
 .dead { color: var(--critical); }
-.empty { color: var(--muted); font-size: 14px; padding: 12px 0; }
+.empty { color: var(--muted); font-size: 14px; padding: 12px 0; border: 0; }
+
+/* zone journey */
+.zone { padding: 8px 0; border-bottom: 1px solid var(--border); }
+.zone:last-child { border-bottom: 0; }
+.zone .row { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
+.zone .row span:last-child { color: var(--text-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.zone .bar { height: 4px; margin-top: 5px; border-radius: 2px; background: var(--surface-2); overflow: hidden; }
+.zone .bar i { display: block; height: 100%; background: var(--class-ink); border-radius: 2px; }
+
 footer { margin-top: 28px; color: var(--muted); font-size: 12px; text-align: center; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="banner" id="banner"></div>
-  <header>
-    <div>
-      <p class="eyebrow">WoW Forever · 1–60 speed run</p>
-      <h1 id="title">Loading…</h1>
-      <div class="sub" id="subtitle"></div>
-    </div>
-    <div class="meta">
-      <div id="updated"></div>
+  <div class="top">
+    <div class="brand"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1l10 11-10 11L2 12z" fill="currentColor"/></svg>NickHub</div>
+    <div class="status">
+      <span id="updated"></span>
       <select id="charPick" hidden aria-label="Character"></select>
     </div>
-  </header>
+  </div>
+  <div class="banner" id="banner"></div>
 
-  <div class="xpbar">
+  <section class="hero">
+    <div>
+      <p class="eyebrow">WoW Forever · Road to 60</p>
+      <h1 id="title">Loading…</h1>
+      <p class="sub" id="subtitle"></p>
+    </div>
+    <div class="lvl"><small>Level</small><b id="lvl"></b></div>
+  </section>
+
+  <div class="road" id="road" role="img"></div>
+  <div class="ticks" aria-hidden="true" id="ticks"></div>
+  <div class="xp">
     <div class="row"><span id="xpLabel"></span><span id="xpPct"></span></div>
     <div class="track"><div class="rested" id="rested"></div><div class="fill" id="xpFill" style="width:0"></div></div>
   </div>
 
-  <div class="tiles" id="tiles"></div>
+  <div class="stats" id="stats"></div>
+  <div class="records" id="records"></div>
 
   <div class="grid">
     <section class="card span-7">
-      <h2>Level by time played</h2>
-      <p class="hint">Hours of /played when each level was reached</p>
+      <h2>The climb</h2>
+      <p class="hint">Level reached by hours of /played</p>
       <div class="chart"><canvas id="cLevel"></canvas></div>
     </section>
     <section class="card span-5">
@@ -145,28 +206,28 @@ footer { margin-top: 28px; color: var(--muted); font-size: 12px; text-align: cen
       <div class="legend"><span><i style="background:var(--series-1)"></i>Mob kills</span><span><i style="background:var(--series-2)"></i>Quests</span></div>
       <div class="chart"><canvas id="cXP"></canvas></div>
     </section>
+    <section class="card span-6">
+      <h2>The journey</h2>
+      <p class="hint">Zones in the order visited, with time spent in each</p>
+      <div class="scroll" id="zones"></div>
+    </section>
+    <section class="card span-6">
+      <h2>Most-killed mobs</h2>
+      <p class="hint">Counts include kills finished by your pet</p>
+      <div class="scroll"><table id="tMobs"></table></div>
+    </section>
     <section class="card span-5">
       <h2>Kills by creature type</h2>
       <p class="hint" id="killHint"></p>
       <div class="chart"><canvas id="cTypes"></canvas></div>
     </section>
     <section class="card span-7">
-      <h2>Most-killed mobs</h2>
-      <p class="hint">Counts include kills finished by your pet</p>
-      <div class="scroll"><table id="tMobs"></table></div>
-    </section>
-    <section class="card span-6">
-      <h2>Zones</h2>
-      <p class="hint">Time spent per zone, in order visited</p>
-      <div class="scroll"><table id="tZones"></table></div>
-    </section>
-    <section class="card span-6">
       <h2>Recent quests</h2>
       <p class="hint" id="questHint"></p>
       <div class="scroll"><table id="tQuests"></table></div>
     </section>
     <section class="card">
-      <h2>Deaths</h2>
+      <h2>The fallen</h2>
       <p class="hint" id="deathHint"></p>
       <div class="scroll"><table id="tDeaths"></table></div>
     </section>
@@ -202,6 +263,15 @@ footer { margin-top: 28px; color: var(--muted); font-size: 12px; text-align: cen
   };
   const cap = (s) => { s = (s || "").toString(); return s.toUpperCase() === s ? s.charAt(0) + s.slice(1).toLowerCase() : s.replace(/([a-z])([A-Z])/g, "$1 $2"); };
 
+  // WoW class colours; darkened on the light theme so they stay readable
+  const CLASS_COLORS = { WARRIOR: "#c79c6e", PALADIN: "#f58cba", HUNTER: "#abd473", ROGUE: "#fff569", PRIEST: "#ffffff", SHAMAN: "#0070de", MAGE: "#69ccf0", WARLOCK: "#9482c9", DRUID: "#ff7d0a" };
+  function classInk(cls) {
+    const hex = CLASS_COLORS[(cls || "").toUpperCase()] || css("--gold");
+    if (getComputedStyle(document.documentElement).colorScheme !== "light") return hex;
+    const mix = (i) => Math.round(parseInt(hex.slice(i, i + 2), 16) * 0.55);
+    return `rgb(${mix(1)}, ${mix(3)}, ${mix(5)})`;
+  }
+
   let data, charts = [], current;
 
   async function load() {
@@ -228,15 +298,25 @@ footer { margin-top: 28px; color: var(--muted); font-size: 12px; text-align: cen
     return rows;
   }
 
+  // draws a chart, or shows msg in its place when there isn't enough data yet
+  function chart(id, ok, msg, cfg) {
+    const box = $(id).parentElement, hasLib = typeof Chart !== "undefined";
+    box.classList.toggle("none", !ok || !hasLib);
+    box.dataset.msg = hasLib ? msg : "Chart library failed to load.";
+    if (ok && hasLib) charts.push(new Chart($(id), cfg));
+  }
+
   function render(key) {
     current = key;
     const c = data.chars[key];
     charts.forEach((ch) => ch.destroy());
     charts = [];
+    document.documentElement.style.setProperty("--class-ink", classInk(c.class));
 
     const race = cap(c.race), cls = cap(c.class);
-    $("title").innerHTML = `${esc(c.name)} <span class="lvl">· ${c.level}</span>`;
-    $("subtitle").textContent = `Level ${c.level} ${race} ${cls} · ${c.realm}${c.zone ? " · " + c.zone : ""}`;
+    $("title").textContent = c.name;
+    $("lvl").textContent = c.level;
+    $("subtitle").textContent = `${race} ${cls} · ${c.realm}${c.zone ? " · " + c.zone : ""}`;
     $("updated").textContent = c.updatedAt ? `Updated ${ago(c.updatedAt)}` : "";
     document.title = `${c.name} · Level ${c.level} · NickHub`;
 
@@ -257,24 +337,32 @@ footer { margin-top: 28px; color: var(--muted); font-size: 12px; text-align: cen
     const avg = gained > 0 && spanPlayed != null ? spanPlayed / gained : null;
     const xpTotal = c.xpGained?.total || 0;
 
-    const tiles = [
+    // road to 60: one notch per level, the current one fills with XP
+    const reached = Object.fromEntries(levels.map((l) => [l.level, l.p]));
+    $("road").setAttribute("aria-label", `Level ${c.level} of 60`);
+    $("road").innerHTML = Array.from({ length: 60 }, (_, i) => {
+      const n = i + 1, done = n < c.level || (n === c.level && c.level >= 60), now = n === c.level && !done;
+      const tip = n in reached && reached[n] != null ? `Level ${n}, reached at ${dur(reached[n])} played` : `Level ${n}`;
+      return `<i class="${done ? "on" : ""}${n % 10 === 0 ? " mark" : ""}" title="${tip}">${now ? `<u style="height:${Math.max(8, pct)}%"></u>` : ""}</i>`;
+    }).join("");
+    $("ticks").innerHTML = [1, 10, 20, 30, 40, 50, 60].map((n) => `<span style="left:${n === 1 ? 0 : ((n - 0.5) / 60) * 100}%">${n}</span>`).join("");
+
+    const stats = [
       ["Time played", dur(c.played), c.startedAt ? `since ${new Date(c.startedAt * 1000).toLocaleDateString()}` : ""],
-      ["Avg per level", dur(avg), gained ? `${gained} levels logged` : ""],
+      ["Avg per level", dur(avg), gained ? `${gained} level${gained === 1 ? "" : "s"} logged` : ""],
       ["Mobs killed", fmtInt(kills.length), c.played ? `${(kills.length / (c.played / 3600)).toFixed(0)} per hour` : ""],
       ["Quests done", fmtInt(quests.length), xpTotal ? `${Math.round(((c.xpGained.quest || 0) / xpTotal) * 100)}% of XP` : ""],
-      ["Deaths", fmtInt(deaths.length), c.petDeaths ? `+ ${c.petDeaths} pet` : "pet: 0"],
+      ["Deaths", fmtInt(deaths.length), c.petDeaths ? `+ ${c.petDeaths} pet` : ""],
       ["Gold", gold(c.money), ""],
     ];
-    $("tiles").innerHTML = tiles.map(([k, v, s]) => `<div class="tile"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${esc(s)}</div></div>`).join("");
+    $("stats").innerHTML = stats.map(([k, v, s]) => `<div class="stat"><div class="k">${k}</div><div class="v">${esc(v)}</div><div class="s">${esc(s)}</div></div>`).join("");
 
     const hasChart = typeof Chart !== "undefined";
-    if (!hasChart) {
-      class Noop { constructor(el) { el.parentElement.innerHTML = '<p class="empty">Chart library failed to load.</p>'; } destroy() {} }
-      window.Chart = Noop; Noop.defaults = { font: {} };
+    const ink = css("--text-2"), grid = css("--grid"), s1 = css("--series-1"), s2 = css("--series-2"), surf = css("--surface"), classCol = css("--class-ink");
+    if (hasChart) {
+      Chart.defaults.font.family = '"IBM Plex Sans", system-ui, sans-serif';
+      Chart.defaults.color = ink;
     }
-    const ink = css("--text-2"), grid = css("--grid"), s1 = css("--series-1"), s2 = css("--series-2"), surf = css("--surface");
-    Chart.defaults.font.family = '"IBM Plex Sans", system-ui, sans-serif';
-    Chart.defaults.color = ink;
     const tooltip = { backgroundColor: css("--surface-2"), titleColor: css("--text"), bodyColor: css("--text-2"), borderColor: css("--border"), borderWidth: 1, padding: 10, displayColors: false };
     const axes = (xTitle, yTitle) => ({
       x: { grid: { display: false }, border: { color: grid }, title: { display: !!xTitle, text: xTitle }, ticks: { maxRotation: 0, autoSkipPadding: 12 } },
@@ -283,15 +371,15 @@ footer { margin-top: 28px; color: var(--muted); font-size: 12px; text-align: cen
 
     // 1. level vs played hours
     const lp = levels.filter((l) => l.p != null);
-    charts.push(new Chart($("cLevel"), {
+    chart("cLevel", lp.length > 1, "Appears after your first level-up.", {
       type: "line",
-      data: { datasets: [{ data: lp.map((l) => ({ x: l.p / 3600, y: l.level })), borderColor: s1, backgroundColor: s1, borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, pointHoverBorderColor: surf, pointHoverBorderWidth: 2, stepped: false, tension: 0 }] },
+      data: { datasets: [{ data: lp.map((l) => ({ x: l.p / 3600, y: l.level })), borderColor: classCol, backgroundColor: classCol, borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, pointHoverBorderColor: surf, pointHoverBorderWidth: 2, stepped: false, tension: 0 }] },
       options: {
         maintainAspectRatio: false, interaction: { mode: "nearest", axis: "x", intersect: false },
         scales: { ...axes("Hours played", "Level"), x: { ...axes().x, type: "linear", title: { display: true, text: "Hours played" } }, y: { ...axes().y, beginAtZero: false, min: 1, max: 60 } },
         plugins: { legend: { display: false }, tooltip: { ...tooltip, callbacks: { title: (i) => `Level ${i[0].parsed.y}`, label: (i) => `reached at ${dur(i.parsed.x * 3600)} played` } } },
       },
-    }));
+    });
 
     // 2. minutes per level
     const per = [];
@@ -299,21 +387,21 @@ footer { margin-top: 28px; color: var(--muted); font-size: 12px; text-align: cen
       const a = levels[i - 1], b = levels[i];
       if (b.level === a.level + 1 && a.p != null && b.p != null) per.push({ level: a.level, min: (b.p - a.p) / 60 });
     }
-    charts.push(new Chart($("cPerLevel"), {
+    chart("cPerLevel", per.length > 0, "Appears after your first level-up.", {
       type: "bar",
-      data: { labels: per.map((r) => r.level), datasets: [{ data: per.map((r) => r.min), backgroundColor: s1, borderRadius: { topLeft: 4, topRight: 4 }, borderSkipped: "bottom", maxBarThickness: 18 }] },
+      data: { labels: per.map((r) => r.level), datasets: [{ data: per.map((r) => r.min), backgroundColor: classCol, borderRadius: { topLeft: 4, topRight: 4 }, borderSkipped: "bottom", maxBarThickness: 18 }] },
       options: {
         maintainAspectRatio: false, scales: axes("Level", "Minutes"),
         plugins: { legend: { display: false }, tooltip: { ...tooltip, callbacks: { title: (i) => `Level ${i[0].label} → ${+i[0].label + 1}`, label: (i) => dur(i.parsed.y * 60) } } },
       },
-    }));
+    });
 
     // 3. xp by source per level (player level at time of gain)
     const byLvl = {};
     kills.forEach((k) => { if (k.x) (byLvl[k.lv] ||= { m: 0, q: 0 }).m += k.x; });
     quests.forEach((q) => { if (q.x) (byLvl[q.lv] ||= { m: 0, q: 0 }).q += q.x; });
     const xl = Object.keys(byLvl).map(Number).sort((a, b) => a - b);
-    charts.push(new Chart($("cXP"), {
+    chart("cXP", xl.length > 0, "Appears after your first XP from a kill or quest.", {
       type: "bar",
       data: {
         labels: xl,
@@ -327,23 +415,23 @@ footer { margin-top: 28px; color: var(--muted); font-size: 12px; text-align: cen
         scales: { x: { ...axes("Level").x, stacked: true }, y: { ...axes(null, "XP").y, stacked: true, ticks: { callback: (v) => (v >= 1000 ? v / 1000 + "k" : v) } } },
         plugins: { legend: { display: false }, tooltip: { ...tooltip, displayColors: true, callbacks: { title: (i) => `Level ${i[0].label}`, label: (i) => `${i.dataset.label}: ${fmtInt(i.parsed.y)} XP` } } },
       },
-    }));
+    });
 
     // 4. creature types
     const npcs = c.npcs || {};
     const typeCount = {};
     kills.forEach((k) => { const t = npcs[k.k]?.type || "Unknown"; typeCount[t] = (typeCount[t] || 0) + 1; });
     const types = Object.entries(typeCount).sort((a, b) => b[1] - a[1]);
-    $("killHint").textContent = `${fmtInt(kills.length)} kills across ${Object.keys(npcs).filter((k) => npcs[k].c).length} mob types`;
-    charts.push(new Chart($("cTypes"), {
+    $("killHint").textContent = kills.length ? `${fmtInt(kills.length)} kills across ${Object.keys(npcs).filter((k) => npcs[k].c).length} mob types` : "";
+    chart("cTypes", types.length > 0, "No kills logged yet.", {
       type: "bar",
-      data: { labels: types.map((t) => t[0]), datasets: [{ data: types.map((t) => t[1]), backgroundColor: s1, borderRadius: { topRight: 4, bottomRight: 4 }, borderSkipped: "left", maxBarThickness: 18 }] },
+      data: { labels: types.map((t) => t[0]), datasets: [{ data: types.map((t) => t[1]), backgroundColor: classCol, borderRadius: { topRight: 4, bottomRight: 4 }, borderSkipped: "left", maxBarThickness: 18 }] },
       options: {
         indexAxis: "y", maintainAspectRatio: false,
         scales: { x: { grid: { color: grid }, border: { display: false }, beginAtZero: true }, y: { grid: { display: false }, border: { color: grid } } },
         plugins: { legend: { display: false }, tooltip: { ...tooltip, callbacks: { label: (i) => `${fmtInt(i.parsed.x)} kills` } } },
       },
-    }));
+    });
 
     // tables
     const mobs = Object.values(npcs).filter((n) => n.c).sort((a, b) => b.c - a.c).slice(0, 25);
@@ -362,30 +450,44 @@ footer { margin-top: 28px; color: var(--muted); font-size: 12px; text-align: cen
       if (last && last.z === z.z) { last.span = (last.span || 0) + (span || 0); last.lv2 = next ? next.lv : c.level; }
       else zrows.push({ z: z.z, lv: z.lv, lv2: next ? next.lv : c.level, span });
     });
-    $("tZones").innerHTML = zrows.length
-      ? `<tr><th>Zone</th><th class="n">Levels</th><th class="n">Time</th></tr>` +
-        zrows.map((z) => `<tr><td>${esc(z.z)}</td><td class="n">${z.lv === z.lv2 ? z.lv : `${z.lv}–${z.lv2}`}</td><td class="n">${dur(z.span)}</td></tr>`).join("")
-      : `<tr><td class="empty">No zones yet.</td></tr>`;
+    const maxSpan = Math.max(1, ...zrows.map((z) => z.span || 0));
+    $("zones").innerHTML = zrows.length
+      ? zrows.map((z) => `<div class="zone"><div class="row"><span>${esc(z.z)}</span><span>${z.lv === z.lv2 ? `Lvl ${z.lv}` : `Lvl ${z.lv}–${z.lv2}`} · ${dur(z.span)}</span></div><div class="bar"><i style="width:${((z.span || 0) / maxSpan) * 100}%"></i></div></div>`).join("")
+      : `<p class="empty">No zones yet.</p>`;
 
     const qXP = quests.reduce((s, q) => s + (q.x || 0), 0);
     $("questHint").textContent = quests.length ? `${fmtInt(quests.length)} turned in · ${fmtInt(qXP)} XP · ${gold(quests.reduce((s, q) => s + (q.m || 0), 0))} rewards` : "";
     $("tQuests").innerHTML = quests.length
       ? `<tr><th>Quest</th><th class="n">Lvl</th><th class="n">XP</th></tr>` +
-        quests.slice(-30).reverse().map((q) => `<tr><td>${esc(q.title || `Quest #${q.id}`)}<div class="s" style="font-size:12px;color:var(--muted)">${esc(q.z || "")}${q.a && q.t ? ` · took ${dur(q.t - q.a)}` : ""}</div></td><td class="n">${q.lv}</td><td class="n">${fmtInt(q.x)}</td></tr>`).join("")
+        quests.slice(-30).reverse().map((q) => `<tr><td>${esc(q.title || `Quest #${q.id}`)}<div class="note">${esc(q.z || "")}${q.a && q.t ? ` · took ${dur(q.t - q.a)}` : ""}</div></td><td class="n">${q.lv}</td><td class="n">${fmtInt(q.x)}</td></tr>`).join("")
       : `<tr><td class="empty">No quests turned in yet.</td></tr>`;
 
+    const killers = {};
+    deaths.forEach((d) => { const b = d.by || "Unknown"; killers[b] = (killers[b] || 0) + 1; });
+    const nemesis = Object.entries(killers).sort((a, b) => b[1] - a[1])[0];
     $("deathHint").textContent = deaths.length ? `${deaths.length} death${deaths.length === 1 ? "" : "s"} so far` : "Deathless so far";
     $("tDeaths").innerHTML = deaths.length
       ? `<tr><th>Killed by</th><th>Zone</th><th class="n">Lvl</th><th class="n">At played</th></tr>` +
         deaths.slice().reverse().map((d) => `<tr><td class="dead">${esc(d.by || "Unknown")}</td><td>${esc(d.z || "—")}</td><td class="n">${d.lv}</td><td class="n">${dur(d.p)}</td></tr>`).join("")
       : `<tr><td class="empty">No deaths. Keep it that way.</td></tr>`;
+
+    // records only appear once there's something worth claiming
+    const ranked = per.slice().sort((a, b) => a.min - b.min);
+    const fast = ranked[0], slow = ranked[ranked.length - 1], prey = mobs[0];
+    const records = [
+      ranked.length > 1 && ["Fastest level", `Level ${fast.level}`, `done in ${dur(fast.min * 60)}`],
+      ranked.length > 1 && ["Longest grind", `Level ${slow.level}`, `took ${dur(slow.min * 60)}`],
+      prey && ["Favorite target", prey.n, `${fmtInt(prey.c)} slain`],
+      nemesis && ["Nemesis", nemesis[0], `${nemesis[1]} death${nemesis[1] === 1 ? "" : "s"}`],
+    ].filter(Boolean);
+    $("records").innerHTML = records.map(([k, v, s]) => `<div class="rec"><div class="k">${k}</div><div class="v">${esc(v)}</div><div class="s">${esc(s)}</div></div>`).join("");
   }
 
   load().then(({ data: d, demo }) => {
     data = d;
     if (demo) {
       $("banner").style.display = "block";
-      $("banner").textContent = "Showing simulated demo data — real progress appears here after your first sync.";
+      $("banner").textContent = "Showing simulated demo data — real progress appears here after the first sync.";
     }
     const keys = Object.keys(data.chars || {});
     if (!keys.length) { $("title").textContent = "No data yet"; return; }
@@ -399,7 +501,7 @@ footer { margin-top: 28px; color: var(--muted); font-size: 12px; text-align: cen
     render(pickDefault(data.chars));
     const mq = matchMedia("(prefers-color-scheme: dark)");
     mq.addEventListener?.("change", () => render(current));
-    new MutationObserver(() => render(current)).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    new MutationObserver((list) => { if (list.some((m) => m.attributeName === "data-theme")) render(current); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
   }).catch((e) => { $("title").textContent = "Couldn't load data"; console.error(e); });
 })();
 </script>

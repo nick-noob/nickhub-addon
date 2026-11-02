@@ -85,7 +85,7 @@ Needs Python 3 (no extra packages).
 
 Each `/nh sync` or logout → the uploader notices within a few seconds → nickhub.com updates. `python uploader\nickhub_uploader.py --dump` prints what it would upload, handy for debugging.
 
-Optional `"character": "Nickhunt"` in config.json uploads only that character (skips your TBC test alt).
+Optional `"character": "Shrim Pina"` in config.json uploads only that character (skips your TBC test alt).
 
 ## Testing on TBC Anniversary before launch
 
