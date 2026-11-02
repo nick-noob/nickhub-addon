@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How NickHub Works</title>
+<meta name="description" content="How a custom World of Warcraft addon, a small uploader and a Cloudflare Worker turn a WoW Forever leveling run into a live website.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="How NickHub Works">
+<meta property="og:description" content="WoW addons can't go online. Here's how every kill, quest and death still ends up on a live website.">
+<meta property="og:url" content="https://nickhub.com/how-it-works">
+<meta name="theme-color" content="#0e100f" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f3efe3" media="(prefers-color-scheme: light)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230e100f'/%3E%3Cpath d='M16 4l10 12-10 12L6 16z' fill='none' stroke='%23e3b85c' stroke-width='2.5'/%3E%3Cpath d='M16 11l4.2 5-4.2 5-4.2-5z' fill='%23e3b85c'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=IBM+Plex+Mono:wght@400&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f3efe3;
+  --surface: #fbf9f2;
+  --surface-2: #e9e4d5;
+  --border: #d8d2c0;
+  --text: #1d1b16;
+  --text-2: #4f4c43;
+  --muted: #736f62;
+  --gold: #8a5f0e;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0e100f;
+    --surface: #161917;
+    --surface-2: #222622;
+    --border: #2c312c;
+    --text: #f2efe6;
+    --text-2: #c4c2b4;
+    --muted: #8e8c80;
+    --gold: #e3b85c;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0e100f;
+  --surface: #161917;
+  --surface-2: #222622;
+  --border: #2c312c;
+  --text: #f2efe6;
+  --text-2: #c4c2b4;
+  --muted: #8e8c80;
+  --gold: #e3b85c;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font: 16px/1.65 "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 1120px; margin: 0 auto; padding-block: 16px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+.brand { display: flex; align-items: center; gap: 8px; font-family: Cinzel, Georgia, serif; font-weight: 700; font-size: 17px; letter-spacing: .04em; color: var(--text); text-decoration: none; }
+.brand svg { width: 16px; height: 16px; color: var(--gold); flex: none; }
+.back { font-size: 14px; color: var(--gold); }
+
+.intro { max-width: 760px; padding: 36px 0 28px; }
+.eyebrow { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); margin: 0 0 8px; font-weight: 500; }
+h1 { font-family: Cinzel, Georgia, serif; font-weight: 700; font-size: clamp(32px, 7vw, 58px); line-height: 1.08; margin: 0; }
+.lede { font-size: 19px; line-height: 1.55; color: var(--text-2); margin: 16px 0 0; }
+
+/* pipeline */
+.pipe { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 900px) { .pipe { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+.pipe li { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px; min-width: 0; }
+.pipe .where { font-size: 12px; color: var(--muted); }
+.pipe b { display: block; font-family: Cinzel, Georgia, serif; font-size: 17px; line-height: 1.3; margin: 2px 0 4px; }
+.pipe p { font-size: 14px; line-height: 1.45; color: var(--text-2); margin: 0; }
+.pipe li:not(:last-child)::after { content: "↓"; position: absolute; left: 50%; bottom: -19px; transform: translateX(-50%); color: var(--gold); font-weight: 600; line-height: 1.2; z-index: 1; }
+@media (min-width: 900px) { .pipe li:not(:last-child)::after { content: "→"; left: auto; right: -11px; bottom: auto; top: 50%; transform: translateY(-50%); } }
+
+/* article */
+.article { max-width: 760px; margin-top: 16px; }
+h2 { font-family: Cinzel, Georgia, serif; font-size: clamp(24px, 4.5vw, 31px); line-height: 1.2; margin: 44px 0 10px; }
+h3 { font-size: 17px; font-weight: 600; line-height: 1.4; margin: 24px 0 4px; }
+p { margin: 0 0 14px; }
+a { color: var(--gold); text-underline-offset: 2px; }
+ul { margin: 0 0 14px; padding-left: 20px; }
+li { margin-bottom: 6px; }
+code { font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace; font-size: .88em; background: var(--surface-2); border-radius: 4px; padding: 1px 5px; overflow-wrap: anywhere; }
+pre { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin: 0 0 14px; overflow-x: auto; font-size: 14px; line-height: 1.5; }
+pre code { background: none; padding: 0; font-size: inherit; overflow-wrap: normal; }
+.cap { font-size: 13px; color: var(--muted); margin: -8px 0 14px; }
+table { width: 100%; border-collapse: collapse; font-size: 15px; margin-bottom: 14px; }
+th { text-align: left; font-weight: 500; color: var(--muted); font-size: 13px; padding: 6px 12px 6px 0; border-bottom: 1px solid var(--border); }
+td { padding: 8px 12px 8px 0; border-bottom: 1px solid var(--border); vertical-align: top; }
+td:last-child, th:last-child { padding-right: 0; }
+.qa { margin-bottom: 18px; }
+.qa h3 { margin-top: 0; }
+footer { margin-top: 40px; color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <a class="brand" href="/"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1l10 11-10 11L2 12z" fill="currentColor"/></svg>NickHub</a>
+    <a class="back" href="/">Back to the tracker</a>
+  </div>
+
+  <section class="intro">
+    <p class="eyebrow">Under the hood</p>
+    <h1>How a WoW run ends up on a website</h1>
+    <p class="lede">World of Warcraft doesn't let addons go online. NickHub still puts every kill, quest and death on a public site, without a server to look after. Here's the trick.</p>
+  </section>
+
+  <ol class="pipe" aria-label="How data moves from the game to the website, in five steps">
+    <li><span class="where">In the game</span><b>The addon</b><p>Listens to the game and logs what happens.</p></li>
+    <li><span class="where">On the PC</span><b>The saved file</b><p>The one place an addon is allowed to write.</p></li>
+    <li><span class="where">On the PC</span><b>The uploader</b><p>Spots changes and sends them to the site.</p></li>
+    <li><span class="where">On Cloudflare</span><b>The Worker</b><p>Checks the password and stores the run.</p></li>
+    <li><span class="where">In your browser</span><b>The dashboard</b><p>Turns raw data into charts and records.</p></li>
+  </ol>
+
+  <div class="article">
+    <h2>The addon keeps the diary</h2>
+    <p>WoW announces almost everything that happens through events: you gained XP, a quest was turned in, something died. NickHub Tracker is about 430 lines of Lua, the language WoW addons are written in. It subscribes to 17 of those events and writes down the ones that matter for a leveling run:</p>
+    <table>
+      <tr><th>Logged</th><th>Details</th></tr>
+      <tr><td>Level-ups</td><td>Time, /played, zone and gold</td></tr>
+      <tr><td>Kills</td><td>Mob, type, level, XP and zone, including pet kills</td></tr>
+      <tr><td>Quests</td><td>Title, XP, money and how long the quest was held</td></tr>
+      <tr><td>Deaths</td><td>Who or what did it, where, and at what level</td></tr>
+      <tr><td>Travel</td><td>Each zone change, plus pet deaths and session times</td></tr>
+    </table>
+
+    <h3>Working out which kills are yours</h3>
+    <p>The combat log says when something dies, but not who gets credit. So the addon tags any NPC that you or your pet hurts. If a tagged mob dies later, that's a kill.</p>
+<pre><code>-- anything I (or my pet) do to an NPC marks it as "mine"
+if isMine(srcFlags) and npcKey(dstGUID) and (DAMAGE[sub] or sub:find("^SPELL_AURA_APPLIED")) then
+  if not tagged[dstGUID] then tagged[dstGUID] = { name = dstName, t = GetTime() } end
+end</code></pre>
+    <p class="cap">From the addon. Every creature has a unique ID, so two wolves with the same name never get mixed up.</p>
+
+    <h3>Matching XP to the right kill</h3>
+    <p>The game doesn't include XP in the death event. It arrives separately as a chat message, the same "dies, you gain 50 experience" line you see in game, and it can land just before or just after the death. The addon reads that message and pairs it with the matching mob name within a three-second window, whichever arrives first. The message pattern comes from the game's own text, so it isn't tied to English.</p>
+
+    <h3>Everything else the game doesn't hand over</h3>
+    <ul>
+      <li><strong>Mob levels and types</strong> aren't in the combat log either. The addon learns them whenever a mob is targeted, moused over or shows a nameplate.</li>
+      <li><strong>/played</strong> normally prints to chat. The addon requests it silently after each level-up, so the time is exact and chat stays clean.</li>
+      <li><strong>Cause of death</strong> is the last thing that hit you, and that includes the environment, such as falling or lava.</li>
+      <li><strong>XP sources</strong> are split by adding up mob XP and quest XP separately, while the total comes from the XP bar itself.</li>
+    </ul>
+
+    <h2>The workaround at the center of it all</h2>
+    <p>Addons run in a locked-down sandbox with no internet access and no general file access. Their only way to keep anything is a saved variables file, and WoW only writes that to disk on logout or a UI reload.</p>
+    <p>That one rule shapes the whole design. Typing <code>/nh sync</code> forces a UI reload, about three seconds, which makes WoW save the file. If you're in combat, the addon waits until the fight ends, then asks. With <code>/nh auto on</code>, it offers a one-click Sync button after every level-up.</p>
+    <p>So the addon never touches the internet. It leaves a note in a file, and something outside the game picks it up.</p>
+
+    <h2>The uploader is the courier</h2>
+    <p>A small Python script, under 300 lines with no extra packages, runs on the PC while you play. Being outside the game, it isn't bound by WoW's rules. Every few seconds it does the following:</p>
+    <ul>
+      <li>Fingerprints the saved file with a SHA-256 hash, which is a cheap way to tell if anything changed.</li>
+      <li>If it did, waits a second so WoW can finish writing.</li>
+      <li>Reads the file with its own small Lua parser, since the file is really Lua code rather than a normal data format, and converts it to JSON.</li>
+      <li>Sends it to the site with a secret password attached.</li>
+    </ul>
+
+    <h2>The Worker is the doorman</h2>
+    <p>Most websites need a computer running all day waiting for visitors. A <a href="https://developers.cloudflare.com/workers/">Cloudflare Worker</a> flips that. It's a small piece of code, about 70 lines of JavaScript here, that Cloudflare runs on its global network only when a request arrives. There's no server to maintain, and it starts in about a millisecond.</p>
+<pre><code>if (url.pathname === "/api/ingest") {
+  if (request.method !== "POST") return json({ error: "POST only" }, 405);
+  return ingest(request, env);
+}
+if (url.pathname === "/api/data") return data(env);
+return env.ASSETS.fetch(request);</code></pre>
+    <p class="cap">The Worker's whole routing logic: an upload, a request for stats, or the website itself.</p>
+    <ul>
+      <li><strong>Uploads</strong> need the password. The check takes the same time wherever a guess goes wrong, so nobody can work it out one character at a time.</li>
+      <li><strong>Storage</strong> is Cloudflare KV, a simple key-value database. The whole run lives under one key, <code>data</code>.</li>
+      <li><strong>Merging</strong> is per character, keeping whichever copy is newest, so uploading from a second WoW install can't wipe another character.</li>
+    </ul>
+
+    <h2>The dashboard does the math</h2>
+    <p>The Worker hands over raw data, and your browser does the rest. Records like fastest level and nemesis, the zone journey and the charts are all worked out on the page when it loads, with <a href="https://www.chartjs.org/">Chart.js</a> drawing the graphs. The colors follow the character too: hunters get WoW's hunter green.</p>
+
+    <h2>Testing a game that wasn't out yet</h2>
+    <p>How do you test a tracker for a run that hasn't happened? A simulator. A test harness fakes WoW's API and runs the real addon through a full 1–60 run, firing kills, quests, deaths and level-ups along the way, then feeds the result through the real uploader's parser. The demo data on the site comes from that run: thousands of kills, all simulated, until the first real sync replaces them.</p>
+
+    <h2>Good to know</h2>
+    <div class="qa">
+      <h3>Is this Advanced Combat Logging or a Blizzard API?</h3>
+      <p>Neither. It doesn't use the <code>WoWCombatLog.txt</code> file that Warcraft Logs reads, or Blizzard's web API. It listens to the in-game event stream that addons like Details! and DBM use, from inside the client.</p>
+    </div>
+    <div class="qa">
+      <h3>Does it play the game or automate anything?</h3>
+      <p>No. It only watches and writes things down. The one action it takes is a UI reload, and only when you ask for one.</p>
+    </div>
+    <div class="qa">
+      <h3>Is it live to the second?</h3>
+      <p>Not quite. Nothing leaves the game until a sync or logout, so the site updates moments after each sync, not after each kill. Nothing is lost in between.</p>
+    </div>
+    <div class="qa">
+      <h3>Are the numbers perfect?</h3>
+      <p>Very close, with known edges. A mob you hit that another player tagged can occasionally count as a kill, and mobs only get a type and level if they were seen by target, mouseover or nameplate.</p>
+    </div>
+
+    <h2>The stack</h2>
+    <table>
+      <tr><th>Part</th><th>Built with</th></tr>
+      <tr><td>Addon</td><td>Lua, WoW's addon API</td></tr>
+      <tr><td>Uploader</td><td>Python standard library</td></tr>
+      <tr><td>Backend</td><td>Cloudflare Workers and KV</td></tr>
+      <tr><td>Dashboard</td><td>Plain HTML, CSS and JavaScript, Chart.js</td></tr>
+    </table>
+
+    <footer><a href="/">See the tracker</a></footer>
+  </div>
+</div>
+</body>
+</html>

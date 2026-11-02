@@ -79,6 +79,7 @@ body {
 .brand { display: flex; align-items: center; gap: 8px; font-family: Cinzel, Georgia, serif; font-weight: 700; font-size: 17px; letter-spacing: .04em; color: var(--text); }
 .brand svg { width: 16px; height: 16px; color: var(--gold); flex: none; }
 .status { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; min-width: 0; }
+.status a { color: var(--gold); white-space: nowrap; }
 .status select { font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 5px 8px; max-width: 170px; }
 .banner { background: var(--gold-soft); color: var(--text); border-radius: 8px; padding: 9px 14px; font-size: 14px; margin-top: 14px; display: none; }
 
@@ -175,6 +176,7 @@ footer { margin-top: 28px; color: var(--muted); font-size: 12px; text-align: cen
     <div class="brand"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1l10 11-10 11L2 12z" fill="currentColor"/></svg>NickHub</div>
     <div class="status">
       <span id="updated"></span>
+      <a href="/how-it-works">How it works</a>
       <select id="charPick" hidden aria-label="Character"></select>
     </div>
   </div>
@@ -255,7 +257,7 @@ footer { margin-top: 28px; color: var(--muted); font-size: 12px; text-align: cen
       <div class="scroll"><table id="tDeaths"></table></div>
     </section>
   </div>
-  <footer>Data from the NickHub Tracker addon · updates each time you /nh sync in game</footer>
+  <footer>Data from the NickHub Tracker addon · updates each time you /nh sync in game · <a href="/how-it-works" style="color:inherit">How it works</a></footer>
 </div>
 
 <script>
