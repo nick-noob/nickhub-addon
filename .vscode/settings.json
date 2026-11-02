@@ -1,0 +1,4 @@
+{
+  "files.exclude": { "**/__pycache__": true, "site/.wrangler": true },
+  "[lua]": { "editor.tabSize": 2 }
+}

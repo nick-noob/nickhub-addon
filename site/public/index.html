@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NickHub Leveling Tracker</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="chart.umd.min.js"></script>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #eef0ea;
+  --surface: #fcfcfb;
+  --surface-2: #e8ebe3;
+  --border: #d9ddd2;
+  --text: #1b1915;
+  --text-2: #52514e;
+  --muted: #7a776f;
+  --accent: #9a6b12;          /* hunter gold, used for headings/progress only */
+  --accent-soft: #f3e3bf;
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --grid: #e3e6de;
+  --critical: #d03b3b;
+  --good: #0ca30c;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #12110f;
+    --surface: #1a1a19;
+    --surface-2: #232220;
+    --border: #2f2d29;
+    --text: #f0efec;
+    --text-2: #c3c2b7;
+    --muted: #8f8d85;
+    --accent: #e0b25a;
+    --accent-soft: #3a2f18;
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #199e70;
+    --grid: #2a2926;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #12110f;
+  --surface: #1a1a19;
+  --surface-2: #232220;
+  --border: #2f2d29;
+  --text: #f0efec;
+  --text-2: #c3c2b7;
+  --muted: #8f8d85;
+  --accent: #e0b25a;
+  --accent-soft: #3a2f18;
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --grid: #2a2926;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font: 15px/1.5 "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 1120px; margin: 0 auto; padding-block: 24px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 24px; margin-bottom: 20px; }
+.eyebrow { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 4px; }
+h1 { text-wrap: balance; font-family: Cinzel, Georgia, serif; font-size: clamp(28px, 5vw, 40px); line-height: 1.1; margin: 0; letter-spacing: .01em; }
+h1 .lvl { color: var(--accent); }
+.sub { color: var(--text-2); margin-top: 4px; }
+.meta { text-align: right; color: var(--muted); font-size: 13px; }
+.meta select { font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; margin-top: 6px; }
+.banner { background: var(--accent-soft); color: var(--text); border-radius: 10px; padding: 10px 14px; font-size: 14px; margin-bottom: 16px; display: none; }
+.xpbar { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; }
+.xpbar .row { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-2); margin-bottom: 8px; gap: 12px; }
+.track { height: 10px; border-radius: 5px; background: var(--surface-2); overflow: hidden; position: relative; }
+.fill { height: 100%; background: var(--accent); border-radius: 5px; }
+.rested { position: absolute; top: 0; height: 100%; background: var(--series-1); opacity: .35; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.tile { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+.tile .k { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.tile .v { font-size: 26px; font-weight: 600; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.tile .s { font-size: 12px; color: var(--text-2); }
+.grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 12px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; min-width: 0; grid-column: span 12; }
+@media (min-width: 860px) { .span-7 { grid-column: span 7; } .span-5 { grid-column: span 5; } .span-6 { grid-column: span 6; } }
+.card h2 { font-size: 15px; margin: 0 0 2px; font-weight: 600; }
+.card .hint { font-size: 13px; color: var(--muted); margin: 0 0 12px; }
+.chart { position: relative; height: 260px; }
+.legend { display: flex; gap: 16px; font-size: 13px; color: var(--text-2); margin: -4px 0 8px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th { text-align: left; font-weight: 500; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+td { padding: 7px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
+.scroll { max-height: 340px; overflow: auto; }
+.pill { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 999px; background: var(--surface-2); color: var(--text-2); }
+.dead { color: var(--critical); }
+.empty { color: var(--muted); font-size: 14px; padding: 12px 0; }
+footer { margin-top: 28px; color: var(--muted); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="banner" id="banner"></div>
+  <header>
+    <div>
+      <p class="eyebrow">WoW Forever · 1–60 speed run</p>
+      <h1 id="title">Loading…</h1>
+      <div class="sub" id="subtitle"></div>
+    </div>
+    <div class="meta">
+      <div id="updated"></div>
+      <select id="charPick" hidden aria-label="Character"></select>
+    </div>
+  </header>
+
+  <div class="xpbar">
+    <div class="row"><span id="xpLabel"></span><span id="xpPct"></span></div>
+    <div class="track"><div class="rested" id="rested"></div><div class="fill" id="xpFill" style="width:0"></div></div>
+  </div>
+
+  <div class="tiles" id="tiles"></div>
+
+  <div class="grid">
+    <section class="card span-7">
+      <h2>Level by time played</h2>
+      <p class="hint">Hours of /played when each level was reached</p>
+      <div class="chart"><canvas id="cLevel"></canvas></div>
+    </section>
+    <section class="card span-5">
+      <h2>Time per level</h2>
+      <p class="hint">Minutes of /played spent on each level</p>
+      <div class="chart"><canvas id="cPerLevel"></canvas></div>
+    </section>
+    <section class="card">
+      <h2>Where the XP came from</h2>
+      <p class="hint">XP earned at each level, split by source</p>
+      <div class="legend"><span><i style="background:var(--series-1)"></i>Mob kills</span><span><i style="background:var(--series-2)"></i>Quests</span></div>
+      <div class="chart"><canvas id="cXP"></canvas></div>
+    </section>
+    <section class="card span-5">
+      <h2>Kills by creature type</h2>
+      <p class="hint" id="killHint"></p>
+      <div class="chart"><canvas id="cTypes"></canvas></div>
+    </section>
+    <section class="card span-7">
+      <h2>Most-killed mobs</h2>
+      <p class="hint">Counts include kills finished by your pet</p>
+      <div class="scroll"><table id="tMobs"></table></div>
+    </section>
+    <section class="card span-6">
+      <h2>Zones</h2>
+      <p class="hint">Time spent per zone, in order visited</p>
+      <div class="scroll"><table id="tZones"></table></div>
+    </section>
+    <section class="card span-6">
+      <h2>Recent quests</h2>
+      <p class="hint" id="questHint"></p>
+      <div class="scroll"><table id="tQuests"></table></div>
+    </section>
+    <section class="card">
+      <h2>Deaths</h2>
+      <p class="hint" id="deathHint"></p>
+      <div class="scroll"><table id="tDeaths"></table></div>
+    </section>
+  </div>
+  <footer>Data from the NickHub Tracker addon · updates each time you /nh sync in game</footer>
+</div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  const fmtInt = (n) => (n ?? 0).toLocaleString();
+  const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const dur = (s) => {
+    if (s == null) return "—";
+    s = Math.max(0, Math.round(s));
+    const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
+    if (d) return `${d}d ${h}h`;
+    if (h) return `${h}h ${m}m`;
+    return `${m}m`;
+  };
+  const gold = (c) => {
+    c = c || 0;
+    const g = Math.floor(c / 10000), s = Math.floor((c % 10000) / 100), cp = c % 100;
+    return g ? `${fmtInt(g)}g ${s}s` : s ? `${s}s ${cp}c` : `${cp}c`;
+  };
+  const ago = (t) => {
+    const s = Date.now() / 1000 - t;
+    if (s < 90) return "just now";
+    if (s < 3600) return `${Math.round(s / 60)} min ago`;
+    if (s < 86400) return `${Math.round(s / 3600)} h ago`;
+    return new Date(t * 1000).toLocaleDateString();
+  };
+  const cap = (s) => { s = (s || "").toString(); return s.toUpperCase() === s ? s.charAt(0) + s.slice(1).toLowerCase() : s.replace(/([a-z])([A-Z])/g, "$1 $2"); };
+
+  let data, charts = [], current;
+
+  async function load() {
+    const demo = new URLSearchParams(location.search).has("demo");
+    if (!demo) {
+      try {
+        const r = await fetch("/api/data", { cache: "no-store" });
+        if (r.ok) {
+          const j = await r.json();
+          if (j && j.chars && Object.keys(j.chars).length) return { data: j, demo: false };
+        }
+      } catch (e) {}
+    }
+    const r = await fetch("demo.json");
+    return { data: await r.json(), demo: true };
+  }
+
+  function pickDefault(chars) {
+    return Object.keys(chars).sort((a, b) => (chars[b].updatedAt || 0) - (chars[a].updatedAt || 0))[0];
+  }
+
+  function levelRows(c) {
+    const rows = Object.entries(c.levels || {}).map(([l, v]) => ({ level: +l, ...v })).sort((a, b) => a.level - b.level);
+    return rows;
+  }
+
+  function render(key) {
+    current = key;
+    const c = data.chars[key];
+    charts.forEach((ch) => ch.destroy());
+    charts = [];
+
+    const race = cap(c.race), cls = cap(c.class);
+    $("title").innerHTML = `${esc(c.name)} <span class="lvl">· ${c.level}</span>`;
+    $("subtitle").textContent = `Level ${c.level} ${race} ${cls} · ${c.realm}${c.zone ? " · " + c.zone : ""}`;
+    $("updated").textContent = c.updatedAt ? `Updated ${ago(c.updatedAt)}` : "";
+    document.title = `${c.name} · Level ${c.level} · NickHub`;
+
+    const pct = c.xpMax ? (c.xp / c.xpMax) * 100 : 100;
+    $("xpFill").style.width = `${c.level >= 60 ? 100 : pct}%`;
+    const restedPct = c.xpMax ? Math.min(100 - pct, ((c.rested || 0) / c.xpMax) * 100) : 0;
+    $("rested").style.left = `${pct}%`;
+    $("rested").style.width = `${c.level >= 60 ? 0 : restedPct}%`;
+    $("xpLabel").textContent = c.level >= 60 ? "Level 60 reached" : `${fmtInt(c.xp)} / ${fmtInt(c.xpMax)} XP to level ${c.level + 1}${c.rested ? ` · ${fmtInt(c.rested)} rested` : ""}`;
+    $("xpPct").textContent = c.level >= 60 ? "" : `${pct.toFixed(1)}%`;
+
+    const levels = levelRows(c);
+    const kills = c.kills || [], quests = c.quests || [], deaths = c.deaths || [];
+    const lastLevel = levels[levels.length - 1];
+    const firstLevel = levels[0];
+    const gained = Math.max(0, c.level - (firstLevel ? firstLevel.level : c.level));
+    const spanPlayed = lastLevel && firstLevel && lastLevel.p != null && firstLevel.p != null ? lastLevel.p - firstLevel.p : null;
+    const avg = gained > 0 && spanPlayed != null ? spanPlayed / gained : null;
+    const xpTotal = c.xpGained?.total || 0;
+
+    const tiles = [
+      ["Time played", dur(c.played), c.startedAt ? `since ${new Date(c.startedAt * 1000).toLocaleDateString()}` : ""],
+      ["Avg per level", dur(avg), gained ? `${gained} levels logged` : ""],
+      ["Mobs killed", fmtInt(kills.length), c.played ? `${(kills.length / (c.played / 3600)).toFixed(0)} per hour` : ""],
+      ["Quests done", fmtInt(quests.length), xpTotal ? `${Math.round(((c.xpGained.quest || 0) / xpTotal) * 100)}% of XP` : ""],
+      ["Deaths", fmtInt(deaths.length), c.petDeaths ? `+ ${c.petDeaths} pet` : "pet: 0"],
+      ["Gold", gold(c.money), ""],
+    ];
+    $("tiles").innerHTML = tiles.map(([k, v, s]) => `<div class="tile"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${esc(s)}</div></div>`).join("");
+
+    const hasChart = typeof Chart !== "undefined";
+    if (!hasChart) {
+      class Noop { constructor(el) { el.parentElement.innerHTML = '<p class="empty">Chart library failed to load.</p>'; } destroy() {} }
+      window.Chart = Noop; Noop.defaults = { font: {} };
+    }
+    const ink = css("--text-2"), grid = css("--grid"), s1 = css("--series-1"), s2 = css("--series-2"), surf = css("--surface");
+    Chart.defaults.font.family = '"IBM Plex Sans", system-ui, sans-serif';
+    Chart.defaults.color = ink;
+    const tooltip = { backgroundColor: css("--surface-2"), titleColor: css("--text"), bodyColor: css("--text-2"), borderColor: css("--border"), borderWidth: 1, padding: 10, displayColors: false };
+    const axes = (xTitle, yTitle) => ({
+      x: { grid: { display: false }, border: { color: grid }, title: { display: !!xTitle, text: xTitle }, ticks: { maxRotation: 0, autoSkipPadding: 12 } },
+      y: { grid: { color: grid }, border: { display: false }, title: { display: !!yTitle, text: yTitle }, beginAtZero: true },
+    });
+
+    // 1. level vs played hours
+    const lp = levels.filter((l) => l.p != null);
+    charts.push(new Chart($("cLevel"), {
+      type: "line",
+      data: { datasets: [{ data: lp.map((l) => ({ x: l.p / 3600, y: l.level })), borderColor: s1, backgroundColor: s1, borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, pointHoverBorderColor: surf, pointHoverBorderWidth: 2, stepped: false, tension: 0 }] },
+      options: {
+        maintainAspectRatio: false, interaction: { mode: "nearest", axis: "x", intersect: false },
+        scales: { ...axes("Hours played", "Level"), x: { ...axes().x, type: "linear", title: { display: true, text: "Hours played" } }, y: { ...axes().y, beginAtZero: false, min: 1, max: 60 } },
+        plugins: { legend: { display: false }, tooltip: { ...tooltip, callbacks: { title: (i) => `Level ${i[0].parsed.y}`, label: (i) => `reached at ${dur(i.parsed.x * 3600)} played` } } },
+      },
+    }));
+
+    // 2. minutes per level
+    const per = [];
+    for (let i = 1; i < levels.length; i++) {
+      const a = levels[i - 1], b = levels[i];
+      if (b.level === a.level + 1 && a.p != null && b.p != null) per.push({ level: a.level, min: (b.p - a.p) / 60 });
+    }
+    charts.push(new Chart($("cPerLevel"), {
+      type: "bar",
+      data: { labels: per.map((r) => r.level), datasets: [{ data: per.map((r) => r.min), backgroundColor: s1, borderRadius: { topLeft: 4, topRight: 4 }, borderSkipped: "bottom", maxBarThickness: 18 }] },
+      options: {
+        maintainAspectRatio: false, scales: axes("Level", "Minutes"),
+        plugins: { legend: { display: false }, tooltip: { ...tooltip, callbacks: { title: (i) => `Level ${i[0].label} → ${+i[0].label + 1}`, label: (i) => dur(i.parsed.y * 60) } } },
+      },
+    }));
+
+    // 3. xp by source per level (player level at time of gain)
+    const byLvl = {};
+    kills.forEach((k) => { if (k.x) (byLvl[k.lv] ||= { m: 0, q: 0 }).m += k.x; });
+    quests.forEach((q) => { if (q.x) (byLvl[q.lv] ||= { m: 0, q: 0 }).q += q.x; });
+    const xl = Object.keys(byLvl).map(Number).sort((a, b) => a - b);
+    charts.push(new Chart($("cXP"), {
+      type: "bar",
+      data: {
+        labels: xl,
+        datasets: [
+          { label: "Mob kills", data: xl.map((l) => byLvl[l].m), backgroundColor: s1, borderColor: surf, borderWidth: { top: 2 }, borderSkipped: false, maxBarThickness: 18 },
+          { label: "Quests", data: xl.map((l) => byLvl[l].q), backgroundColor: s2, borderRadius: { topLeft: 4, topRight: 4 }, borderSkipped: false, maxBarThickness: 18 },
+        ],
+      },
+      options: {
+        maintainAspectRatio: false, interaction: { mode: "index", intersect: false },
+        scales: { x: { ...axes("Level").x, stacked: true }, y: { ...axes(null, "XP").y, stacked: true, ticks: { callback: (v) => (v >= 1000 ? v / 1000 + "k" : v) } } },
+        plugins: { legend: { display: false }, tooltip: { ...tooltip, displayColors: true, callbacks: { title: (i) => `Level ${i[0].label}`, label: (i) => `${i.dataset.label}: ${fmtInt(i.parsed.y)} XP` } } },
+      },
+    }));
+
+    // 4. creature types
+    const npcs = c.npcs || {};
+    const typeCount = {};
+    kills.forEach((k) => { const t = npcs[k.k]?.type || "Unknown"; typeCount[t] = (typeCount[t] || 0) + 1; });
+    const types = Object.entries(typeCount).sort((a, b) => b[1] - a[1]);
+    $("killHint").textContent = `${fmtInt(kills.length)} kills across ${Object.keys(npcs).filter((k) => npcs[k].c).length} mob types`;
+    charts.push(new Chart($("cTypes"), {
+      type: "bar",
+      data: { labels: types.map((t) => t[0]), datasets: [{ data: types.map((t) => t[1]), backgroundColor: s1, borderRadius: { topRight: 4, bottomRight: 4 }, borderSkipped: "left", maxBarThickness: 18 }] },
+      options: {
+        indexAxis: "y", maintainAspectRatio: false,
+        scales: { x: { grid: { color: grid }, border: { display: false }, beginAtZero: true }, y: { grid: { display: false }, border: { color: grid } } },
+        plugins: { legend: { display: false }, tooltip: { ...tooltip, callbacks: { label: (i) => `${fmtInt(i.parsed.x)} kills` } } },
+      },
+    }));
+
+    // tables
+    const mobs = Object.values(npcs).filter((n) => n.c).sort((a, b) => b.c - a.c).slice(0, 25);
+    $("tMobs").innerHTML = mobs.length
+      ? `<tr><th>Mob</th><th>Type</th><th class="n">Levels</th><th class="n">Kills</th></tr>` +
+        mobs.map((n) => `<tr><td>${esc(n.n)}${n.cl && n.cl !== "normal" ? ` <span class="pill">${esc(n.cl)}</span>` : ""}</td><td>${esc(n.type || "—")}</td><td class="n">${n.minL ? (n.minL === n.maxL ? n.minL : `${n.minL}–${n.maxL}`) : "—"}</td><td class="n">${fmtInt(n.c)}</td></tr>`).join("")
+      : `<tr><td class="empty">No kills logged yet.</td></tr>`;
+
+    const zones = c.zones || [];
+    const zrows = [];
+    zones.forEach((z, i) => {
+      const next = zones[i + 1];
+      const end = next ? next.p : c.played;
+      const span = z.p != null && end != null ? end - z.p : null;
+      const last = zrows[zrows.length - 1];
+      if (last && last.z === z.z) { last.span = (last.span || 0) + (span || 0); last.lv2 = next ? next.lv : c.level; }
+      else zrows.push({ z: z.z, lv: z.lv, lv2: next ? next.lv : c.level, span });
+    });
+    $("tZones").innerHTML = zrows.length
+      ? `<tr><th>Zone</th><th class="n">Levels</th><th class="n">Time</th></tr>` +
+        zrows.map((z) => `<tr><td>${esc(z.z)}</td><td class="n">${z.lv === z.lv2 ? z.lv : `${z.lv}–${z.lv2}`}</td><td class="n">${dur(z.span)}</td></tr>`).join("")
+      : `<tr><td class="empty">No zones yet.</td></tr>`;
+
+    const qXP = quests.reduce((s, q) => s + (q.x || 0), 0);
+    $("questHint").textContent = quests.length ? `${fmtInt(quests.length)} turned in · ${fmtInt(qXP)} XP · ${gold(quests.reduce((s, q) => s + (q.m || 0), 0))} rewards` : "";
+    $("tQuests").innerHTML = quests.length
+      ? `<tr><th>Quest</th><th class="n">Lvl</th><th class="n">XP</th></tr>` +
+        quests.slice(-30).reverse().map((q) => `<tr><td>${esc(q.title || `Quest #${q.id}`)}<div class="s" style="font-size:12px;color:var(--muted)">${esc(q.z || "")}${q.a && q.t ? ` · took ${dur(q.t - q.a)}` : ""}</div></td><td class="n">${q.lv}</td><td class="n">${fmtInt(q.x)}</td></tr>`).join("")
+      : `<tr><td class="empty">No quests turned in yet.</td></tr>`;
+
+    $("deathHint").textContent = deaths.length ? `${deaths.length} death${deaths.length === 1 ? "" : "s"} so far` : "Deathless so far";
+    $("tDeaths").innerHTML = deaths.length
+      ? `<tr><th>Killed by</th><th>Zone</th><th class="n">Lvl</th><th class="n">At played</th></tr>` +
+        deaths.slice().reverse().map((d) => `<tr><td class="dead">${esc(d.by || "Unknown")}</td><td>${esc(d.z || "—")}</td><td class="n">${d.lv}</td><td class="n">${dur(d.p)}</td></tr>`).join("")
+      : `<tr><td class="empty">No deaths. Keep it that way.</td></tr>`;
+  }
+
+  load().then(({ data: d, demo }) => {
+    data = d;
+    if (demo) {
+      $("banner").style.display = "block";
+      $("banner").textContent = "Showing simulated demo data — real progress appears here after your first sync.";
+    }
+    const keys = Object.keys(data.chars || {});
+    if (!keys.length) { $("title").textContent = "No data yet"; return; }
+    if (keys.length > 1) {
+      const sel = $("charPick");
+      sel.hidden = false;
+      sel.innerHTML = keys.map((k) => `<option value="${esc(k)}">${esc(k)}</option>`).join("");
+      sel.value = pickDefault(data.chars);
+      sel.onchange = () => render(sel.value);
+    }
+    render(pickDefault(data.chars));
+    const mq = matchMedia("(prefers-color-scheme: dark)");
+    mq.addEventListener?.("change", () => render(current));
+    new MutationObserver(() => render(current)).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  }).catch((e) => { $("title").textContent = "Couldn't load data"; console.error(e); });
+})();
+</script>
+</body>
+</html>

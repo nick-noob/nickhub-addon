@@ -1,0 +1,15 @@
+{
+  "runtime.version": "Lua 5.1",
+  "workspace.library": [],
+  "diagnostics.globals": [
+    "CreateFrame", "C_Timer", "C_QuestLog", "UnitName", "UnitGUID", "UnitLevel", "UnitXP", "UnitXPMax",
+    "UnitClass", "UnitRace", "UnitFactionGroup", "UnitExists", "UnitIsPlayer", "UnitCreatureType",
+    "UnitClassification", "UnitAffectingCombat", "InCombatLockdown", "GetRealmName", "GetRealZoneText",
+    "GetMoney", "GetXPExhaustion", "GetServerTime", "GetTime", "GetTitleText", "GetQuestID", "GetQuestLogTitle",
+    "RequestTimePlayed", "ReloadUI", "SecondsToTime", "CombatLogGetCurrentEventInfo", "strsplit", "bit",
+    "DEFAULT_CHAT_FRAME", "ChatFrame_DisplayTimePlayed", "StaticPopupDialogs", "StaticPopup_Show",
+    "SlashCmdList", "SLASH_NICKHUB1", "SLASH_NICKHUB2", "NickHubTrackerDB",
+    "COMBATLOG_OBJECT_AFFILIATION_MINE", "COMBATLOG_XPGAIN_FIRSTPERSON", "COMBATLOG_XPGAIN_FIRSTPERSON_UNNAMED"
+  ],
+  "diagnostics.disable": ["lowercase-global"]
+}

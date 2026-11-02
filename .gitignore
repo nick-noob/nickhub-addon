@@ -1,0 +1,17 @@
+# secrets
+uploader/config.json
+site/.dev.vars
+
+# build / deps
+node_modules/
+site/.wrangler/
+__pycache__/
+*.pyc
+
+# test output
+tools/NickHubTracker.lua
+tools/sample.json
+
+# macOS
+.DS_Store
+.probe

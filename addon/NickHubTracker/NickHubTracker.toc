@@ -1,0 +1,8 @@
+## Interface: 11507, 20505, 11508, 20504
+## Title: NickHub Tracker
+## Notes: Logs leveling progress (levels, kills, quests, deaths, zones) for nickhub.com
+## Author: Nick
+## Version: 1.0.0
+## SavedVariables: NickHubTrackerDB
+
+NickHubTracker.lua
