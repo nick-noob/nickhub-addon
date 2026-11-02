@@ -1,6 +1,11 @@
 # NickHub Leveling Tracker
 
-Tracks a WoW Forever 1–60 run and shows it on nickhub.com.
+A custom World of Warcraft addon that logs a WoW Forever 1–60 run, kill by kill, and publishes it to a live website.
+
+- **See it live:** [nickhub.com](https://nickhub.com)
+- **Read how it works:** [nickhub.com/how-it-works](https://nickhub.com/how-it-works)
+
+WoW addons can't go online, so the addon saves to a file, a small uploader on the PC sends that file to a Cloudflare Worker, and the dashboard reads it from there.
 
 ```
 WoW addon ──(/nh sync writes SavedVariables)──> uploader on your PC ──HTTPS──> Cloudflare Worker (nickhub.com) ──> dashboard
@@ -18,6 +23,10 @@ WoW addon ──(/nh sync writes SavedVariables)──> uploader on your PC ─�
 
 ---
 
+# Setup
+
+These are the steps for running this tracker, written for nickhub.com. On your own copy, use your own domain in place of `nickhub.com`, including in `site/wrangler.toml`, and your own KV namespace `id`. The `id` in this repo belongs to the live site and won't work on another Cloudflare account.
+
 ## 1. Put nickhub.com on Cloudflare (one time, ~10 min)
 
 1. Make a free account at dash.cloudflare.com → **Add a domain** → `nickhub.com` → Free plan.
@@ -34,7 +43,7 @@ npx wrangler login
 npx wrangler kv namespace create NICKHUB
 ```
 
-Copy the `id` it prints into `wrangler.toml` (replace `PASTE_KV_NAMESPACE_ID_HERE`). Then make an upload password and store it as a secret:
+Copy the `id` it prints into `wrangler.toml`, replacing the existing `id` under `[[kv_namespaces]]`. Then make an upload password and store it as a secret:
 
 ```bash
 python3 -c "import secrets; print(secrets.token_urlsafe(32))"
@@ -48,7 +57,7 @@ nickhub.com now shows the dashboard with demo data until your first upload. Rede
 
 ## 3. Install the addon (Windows)
 
-Get the repo onto your Windows PC with `git clone https://github.com/<you>/nickhub-addon.git` (or GitHub Desktop, or **Code → Download ZIP** on the repo page). Then, in PowerShell from the repo folder:
+Get the repo onto your Windows PC with `git clone https://github.com/nick-noob/nickhub-addon.git` (or GitHub Desktop, or **Code → Download ZIP** on the repo page). Then, in PowerShell from the repo folder:
 
 ```powershell
 .\scripts\install-addon.ps1                     # TBC Anniversary, for testing
@@ -108,3 +117,9 @@ Optional `"character": "Shrim Pina"` in config.json uploads only that character 
 - Creature type and mob level come from targeting, mouseover or nameplates, so turn nameplates on (V) for the best coverage.
 - Forever runs a Classic-era client; the addon uses only APIs those clients share and skips any event a client doesn't have. Give it a quick check on launch night with `/nh`.
 - `tools/` has the test harness that runs the addon against a fake WoW API (`python tools/run_sim.py` — needs `pip install lupa`). It's how `site/public/demo.json` was made.
+
+## Rights
+
+This repo has no open source license, so all rights are reserved. You're welcome to read the code, but no permission is granted to reuse or redistribute it. Chart.js (`site/public/chart.umd.min.js`) is third-party code under its own MIT License.
+
+This is an unofficial fan project and isn't affiliated with or endorsed by Blizzard Entertainment. World of Warcraft and the orc portrait used as the site icon (`site/public/favicon.png` and `site/public/apple-touch-icon.png`) belong to Blizzard Entertainment.

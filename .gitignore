@@ -15,3 +15,6 @@ tools/sample.json
 # macOS
 .DS_Store
 
+
+# local source images
+work-work.png
