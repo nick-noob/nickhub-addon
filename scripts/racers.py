@@ -43,6 +43,10 @@ START_HERE = """NickHub: racing as {name}
 3. Leave the NickHub window open while you play.
 4. In game, type /nh sync whenever you want nickhub.com updated. Logging out works too.
 
+Tip: turn enemy nameplates on (press V). Your kills count either way, but the addon
+learns each mob's type and level from nameplates, targeting and mouseover, so your
+profile's mob stats are much more complete with them on.
+
 If it can't find WoW, it asks you to paste your World of Warcraft folder,
 the one that contains _forever_. It remembers it after that.
 
