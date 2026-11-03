@@ -17,7 +17,9 @@ WoW Forever launches **2026-11-04 at 3:00 PM PT** (23:00 UTC). The site shows a 
 | `addon/NickHubTracker/` | The addon. It logs level-ups, kills, quests, deaths and zones to `NickHubTrackerDB` |
 | `uploader/` | Python uploader (standard library only) that watches the SavedVariables file and POSTs it |
 | `site/src/worker.js` | Cloudflare Worker: `POST /api/ingest` (Bearer password), `GET /api/summary`, `GET /api/char/<key>`, `GET /api/data`, and static assets for everything else |
-| `scripts/racers.py` | Mac-only tool that adds, lists and revokes per-racer upload passwords (hashed in KV) and writes each racer's `config.json` into the gitignored `racers/` folder |
+| `scripts/racers.py` | Mac-only tool that adds, lists and revokes per-racer upload passwords (hashed in KV), writes each racer's `config.json` into the gitignored `racers/` folder, and packages it with `release/NickHub.exe` into a zip to send |
+| `uploader/nickhub_app.py` | The racers' app, built into `NickHub.exe`. It finds WoW Forever, installs or updates the bundled addon, and watches and uploads every account's saved file. `--check` is a dry run |
+| `.github/workflows/build-app.yml` | Builds `NickHub.exe` on Windows with PyInstaller, smoke-tests it against a fake WoW install, and attaches it to published releases |
 | `site/public/` | `index.html` (dashboard), `how-it-works.html`, `how-the-race-works.html`, `demo.json`, favicons |
 | `tools/` | Simulator: runs the real addon against a fake WoW API (`python tools/run_sim.py`, needs `pip install lupa`). It generated `site/public/demo.json` |
 | `scripts/install-addon.ps1` | Windows script that links the addon into `World of Warcraft\<flavor>\Interface\AddOns` with a junction |
@@ -55,7 +57,8 @@ From Windows, commit and push site changes, then ask Nick to deploy them from th
   - **Passwords:** racers live under `racer:<sha256 of password>` → `{ character }`. A racer password may only update keys ending in `-<character>`, while `INGEST_TOKEN` (Nick's) is the admin password and may update any key.
   - **No friends registered yet.**
 - **To remove a stray character** (such as a test upload), delete its `char:<key>` from KV. `/nh reset` only clears the PC.
-- **Addon release:** `release/NickHubTracker.zip` (gitignored) is built for a GitHub release `v1.0.0`, which Nick publishes himself. Friends unzip it into `_forever_\Interface\AddOns`.
+- **Release:** `release/NickHubTracker.zip` and `release/release-notes.md` (both gitignored) are ready for GitHub release `v1.0.0`, which Nick publishes himself. Publishing it makes the workflow attach `NickHub.exe`.
+- **Racers' setup:** each racer gets a personal zip from `racers.py` containing the app, their config and a "Start here" note. The app installs the addon, so racers don't need the addon zip.
 
 ### Windows setup steps (summary)
 1. **Install the tools:** GitHub Desktop, and Python from python.org with "Add python.exe to PATH" ticked.
@@ -88,6 +91,5 @@ Done: per-racer passwords, per-character storage, and the `/api/summary` and `/a
 
 Still to build:
 - **Pages:** a leaderboard home page with a race chart, plus individual pages such as `/shrim-pina`. These should use `/api/summary` and `/api/char/<key>`. The current dashboard still loads everything through `/api/data`, and a level 60 run is about 500 KB.
-- **Friends' app:** a PyInstaller `.exe` built on Windows that finds the WoW folder itself. Each friend gets a zip with their own `config.json`, shared privately and never committed.
 
 When the real leaderboard ships, remove the "Preview" label from `how-the-race-works.html`.

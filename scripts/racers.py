@@ -2,9 +2,13 @@
 """
 Manage race passwords for nickhub.com. Run on the Mac, where Wrangler is logged in to Cloudflare.
 
-    python3 scripts/racers.py add "Character Name"     # new password + racers/<name>/config.json
-    python3 scripts/racers.py list                     # who's registered
-    python3 scripts/racers.py revoke "Character Name"  # the old password stops working
+    python3 scripts/racers.py add "Character Name"      # new password + racers/<name>/config.json
+    python3 scripts/racers.py package "Character Name"  # zip NickHub.exe + their config to send them
+    python3 scripts/racers.py list                      # who's registered
+    python3 scripts/racers.py revoke "Character Name"   # the old password stops working
+
+`package` (also run by `add`) needs release/NickHub.exe. Get the latest build with:
+    gh release download --pattern NickHub.exe --dir release --clobber
 
 Each password is stored in Cloudflare KV only as a SHA-256 hash, tied to one character, so a
 racer's uploader can update that character and nothing else. The password itself is only
@@ -22,11 +26,32 @@ import re
 import secrets
 import subprocess
 import sys
+import zipfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SITE = os.path.join(ROOT, "site")
 RACERS = os.path.join(ROOT, "racers")
+EXE = os.path.join(ROOT, "release", "NickHub.exe")
 PREFIX = "racer:"
+
+START_HERE = """NickHub: racing as {name}
+
+1. Unzip this whole folder somewhere you'll keep it, like Documents\\NickHub.
+2. Double-click NickHub.exe before you log in to WoW Forever.
+   Windows may say "Windows protected your PC". Click More info, then Run anyway.
+   It finds WoW, installs the NickHub Tracker addon, and keeps it up to date.
+3. Leave the NickHub window open while you play.
+4. In game, type /nh sync whenever you want nickhub.com updated. Logging out works too.
+
+If it can't find WoW, it asks you to paste your World of Warcraft folder,
+the one that contains _forever_. It remembers it after that.
+
+To start it automatically: press Win+R, type shell:startup, press Enter,
+and put a shortcut to NickHub.exe in the folder that opens.
+
+config.json holds your personal password. Don't share it.
+If it ever leaks, tell Nick and he'll send you a new one.
+"""
 
 
 def wrangler(args, where):
@@ -66,7 +91,28 @@ def add(name, where):
         json.dump(cfg, fh, indent=2)
         fh.write("\n")
     print(f"Registered {name}. Their config is at {os.path.relpath(path, ROOT)}")
-    print("Send it privately. It contains their password, so don't post it or commit it.")
+    if os.path.exists(EXE):
+        package(name)
+    else:
+        print("Download NickHub.exe into release/, then run `package` to build their zip.")
+
+
+def package(name):
+    folder = os.path.join(RACERS, slug(name))
+    cfg = os.path.join(folder, "config.json")
+    if not os.path.exists(cfg):
+        sys.exit(f"No config for {name} at {os.path.relpath(cfg, ROOT)}. Run `add` first.")
+    if not os.path.exists(EXE):
+        sys.exit("release/NickHub.exe is missing. Get it with: gh release download --pattern NickHub.exe --dir release --clobber")
+    out = os.path.join(folder, f"NickHub-{slug(name)}.zip")
+    with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
+        z.write(EXE, "NickHub/NickHub.exe")
+        z.write(cfg, "NickHub/config.json")
+        z.writestr("NickHub/Start here.txt", START_HERE.format(name=name).replace("\n", "\r\n"))
+    os.chmod(out, 0o600)
+    print(f"Packaged {os.path.relpath(out, ROOT)}")
+    print("Send it privately (Discord DM or a Google Drive share; Gmail blocks .exe files).")
+    print("It contains their password, so don't post it in a group chat or commit it.")
 
 
 def show(where):
@@ -88,7 +134,7 @@ def revoke(name, where):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("command", choices=["add", "list", "revoke"])
+    ap.add_argument("command", choices=["add", "package", "list", "revoke"])
     ap.add_argument("character", nargs="?", help='the in-game character name, e.g. "Shrim Pina"')
     ap.add_argument("--local", action="store_true", help="use wrangler dev's local storage, for testing")
     args = ap.parse_args()
@@ -96,7 +142,8 @@ def main():
     name = (args.character or "").strip()
     if args.command != "list" and not name:
         ap.error(f"{args.command} needs a character name")
-    {"add": lambda: add(name, where), "list": lambda: show(where), "revoke": lambda: revoke(name, where)}[args.command]()
+    {"add": lambda: add(name, where), "package": lambda: package(name), "list": lambda: show(where),
+     "revoke": lambda: revoke(name, where)}[args.command]()
 
 
 if __name__ == "__main__":

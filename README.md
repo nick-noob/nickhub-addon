@@ -101,14 +101,27 @@ Optional `"character": "Shrim Pina"` in config.json uploads only that character 
 Each friend gets their own upload password, tied to their character. Their uploader can update that character and nothing else, so nobody can overwrite another run. Run this on the Mac, where Wrangler is logged in:
 
 ```bash
-python3 scripts/racers.py add "Character Name"     # registers them and writes racers/<name>/config.json
-python3 scripts/racers.py list                     # who's registered
-python3 scripts/racers.py revoke "Character Name"  # their password stops working; their stats stay
+gh release download --pattern NickHub.exe --dir release --clobber   # latest app build
+python3 scripts/racers.py add "Character Name"      # registers them and builds their zip
+python3 scripts/racers.py package "Character Name"  # rebuild their zip, e.g. after a new app build
+python3 scripts/racers.py list                      # who's registered
+python3 scripts/racers.py revoke "Character Name"   # their password stops working; their stats stay
 ```
 
-Send each friend their `config.json` privately. It contains their password, and the `racers/` folder is gitignored so it can't be committed. To replace a lost password, revoke it and add the friend again. Your own `INGEST_TOKEN` stays the admin password and can update any character.
+`add` writes `racers/<name>/config.json` and, when `release/NickHub.exe` is there, `racers/<name>/NickHub-<name>.zip`. That zip holds the app, their config and a "Start here" note. Send it to the friend privately (a Discord DM or Google Drive share works; Gmail blocks `.exe` files). It contains their password, and the `racers/` and `release/` folders are gitignored so neither can be committed. To replace a lost password, revoke it and add the friend again. Your own `INGEST_TOKEN` stays the admin password and can update any character.
 
-Friends install the addon from the [latest release](https://github.com/nick-noob/nickhub-addon/releases/latest), before their first login.
+### The racer app (NickHub.exe)
+
+`uploader/nickhub_app.py` is the uploader for friends, built into a single `NickHub.exe` by GitHub Actions (`.github/workflows/build-app.yml`). The build also smoke-tests the exe on Windows against a fake WoW install. Each push that touches `uploader/` or `addon/` produces a build artifact, and publishing a GitHub release attaches `NickHub.exe` to it.
+
+When a friend double-clicks it, it:
+1. Finds WoW Forever, checking the registry and the usual install folders on every drive, and asks for the folder if it can't find one.
+2. Installs or updates the bundled addon in `Interface\AddOns`.
+3. Watches every WoW account's saved file and uploads changes, like the uploader you run.
+
+To check it on a PC without uploading anything, run `NickHub.exe --check`.
+
+Friends who only want the addon can download it from the [latest release](https://github.com/nick-noob/nickhub-addon/releases/latest). Either way, it needs to be installed before their first login.
 
 ## Testing on TBC Anniversary before launch
 
