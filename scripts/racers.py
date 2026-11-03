@@ -37,6 +37,8 @@ PREFIX = "racer:"
 START_HERE = """NickHub: racing as {name}
 
 1. Unzip this whole folder somewhere you'll keep it, like Documents\\NickHub.
+   Before launch, double-click "Test my setup.bat". It checks your password and
+   finds WoW without uploading any stats, then tells you if anything needs fixing.
 2. Double-click NickHub.exe before you log in to WoW Forever.
    Windows may say "Windows protected your PC". Click More info, then Run anyway.
    It finds WoW, installs the NickHub Tracker addon, and keeps it up to date.
@@ -56,6 +58,8 @@ and put a shortcut to NickHub.exe in the folder that opens.
 config.json holds your personal password. Don't share it.
 If it ever leaks, tell Nick and he'll send you a new one.
 """
+
+TEST_BAT = '@echo off\r\ncd /d "%~dp0"\r\nNickHub.exe --test\r\n'
 
 
 def wrangler(args, where):
@@ -113,6 +117,7 @@ def package(name):
         z.write(EXE, "NickHub/NickHub.exe")
         z.write(cfg, "NickHub/config.json")
         z.writestr("NickHub/Start here.txt", START_HERE.format(name=name).replace("\n", "\r\n"))
+        z.writestr("NickHub/Test my setup.bat", TEST_BAT)
     os.chmod(out, 0o600)
     print(f"Packaged {os.path.relpath(out, ROOT)}")
     print("Send it privately (Discord DM or a Google Drive share; Gmail blocks .exe files).")

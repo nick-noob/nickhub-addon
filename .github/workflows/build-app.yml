@@ -60,6 +60,12 @@ jobs:
           $again = & .\dist\NickHub.exe --check --wow-dir $wow --config $cfg | Out-String
           if ($again -notmatch "Addon: up to date") { throw "second run reinstalled the addon" }
 
+          # the setup test must finish without waiting for Enter, and report an unreachable site
+          $t = & .\dist\NickHub.exe --test --wow-dir $wow --config $cfg | Out-String
+          Write-Host $t
+          if ($t -notmatch "WoW Forever found") { throw "setup test didn't find WoW" }
+          if ($t -notmatch "Couldn't reach nickhub.com") { throw "setup test didn't report the unreachable site" }
+
       - uses: actions/upload-artifact@v4
         with:
           name: NickHub

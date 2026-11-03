@@ -7,6 +7,7 @@ It finds World of Warcraft, installs or updates the NickHub Tracker addon, then 
 saved file and uploads it to nickhub.com whenever you /nh sync or log out.
 
     NickHub.exe                         # normal use
+    NickHub.exe --test                  # check the password, WoW and addon before launch; uploads nothing
     NickHub.exe --check                 # set up and show what it would upload, without uploading
     NickHub.exe --wow-dir "D:\\Games\\World of Warcraft"
 """
@@ -32,6 +33,12 @@ FLAVOR = "_forever_"
 
 def say(text=""):
     print(text, flush=True)
+
+
+def pause():
+    # a double-clicked window closes on exit, so wait; skipped when there's no one to press Enter (e.g. CI)
+    if FROZEN and sys.stdin and sys.stdin.isatty():
+        input("\nPress Enter to close.")
 
 
 def fail(text):
@@ -216,7 +223,55 @@ def report(status, text, payload):
     return True
 
 
+def test(args):
+    """A pre-launch check of everything except the game itself. Its only upload is empty, so nothing reaches the leaderboard."""
+    cfg_path = args.config or os.path.join(HERE, "config.json")
+    problems = []
+    say("NickHub setup test")
+    say()
+    cfg = load_config(cfg_path)
+    if args.wow_dir:
+        cfg["wow_dir"] = args.wow_dir
+    say(f"[ok]  config.json found. Racing as: {cfg.get('character') or 'every character on this PC'}")
+
+    try:
+        status, _ = up.upload(cfg, {"version": 0, "chars": {}})
+        if 200 <= status < 300:
+            say("[ok]  nickhub.com accepted your password")
+        else:
+            problems.append(f"nickhub.com answered {status}")
+    except urllib.error.HTTPError as e:
+        problems.append("nickhub.com rejected your password. Ask Nick for a fresh config.json." if e.code == 401 else f"nickhub.com answered {e.code}")
+    except (urllib.error.URLError, OSError) as e:
+        problems.append(f"Couldn't reach nickhub.com ({e}). Check your internet connection or firewall.")
+
+    try:
+        game = find_game(cfg, cfg_path, interactive=False)
+    except SystemExit:
+        game = None
+        problems.append("WoW Forever isn't installed yet, or isn't in a usual place. Once it's installed, run this test again. "
+                        "If it still isn't found, double-click NickHub.exe and it will ask for your World of Warcraft folder.")
+    if game:
+        say(f"[ok]  WoW Forever found: {game}")
+        say(f"[ok]  Addon: {install_addon(game)}")
+        files = saved_files(game, cfg)
+        if files:
+            say(f"[ok]  Saved data found. Your next upload: {up.summarize(build_payload(files, cfg.get('character') or None))}")
+        else:
+            say("[--]  No saved data yet. That's expected before your first login. It appears after your first /nh sync.")
+
+    for p in problems:
+        say(f"[!!]  {p}")
+    say()
+    say("All set. Double-click NickHub.exe before you log in to WoW Forever." if not problems else
+        f"{len(problems)} thing{'s' if len(problems) > 1 else ''} to fix. Send Nick a screenshot of this window if you're stuck.")
+
+
 def run(args):
+    if args.test:
+        test(args)
+        pause()
+        return
     cfg_path = args.config or os.path.join(HERE, "config.json")
     cfg = load_config(cfg_path)
     if args.wow_dir:
@@ -272,6 +327,7 @@ def run(args):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--test", action="store_true", help="check the password, WoW and addon before launch, without uploading any stats")
     ap.add_argument("--check", action="store_true", help="set up and show what would be uploaded, then exit")
     ap.add_argument("--once", action="store_true", help="upload once and exit")
     ap.add_argument("--wow-dir", help="your World of Warcraft folder, if it isn't found automatically")
@@ -286,13 +342,13 @@ def main():
     except SystemExit as e:
         if e.code not in (None, 0):
             say(str(e.code))
-            if FROZEN and not args.check:
-                input("\nPress Enter to close.")
+            if not args.check:
+                pause()
             sys.exit(1)
     except Exception as e:  # keep the window open so the racer can read what went wrong
         say(f"Something went wrong: {e!r}")
-        if FROZEN and not args.check:
-            input("\nPress Enter to close.")
+        if not args.check:
+            pause()
         sys.exit(1)
 
 

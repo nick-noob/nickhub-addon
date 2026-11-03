@@ -18,7 +18,7 @@ WoW Forever launches **2026-11-04 at 3:00 PM PT** (23:00 UTC). The site shows a 
 | `uploader/` | Python uploader (standard library only) that watches the SavedVariables file and POSTs it |
 | `site/src/worker.js` | Cloudflare Worker: `POST /api/ingest` (Bearer password), `GET /api/summary`, `GET /api/char/<key>`, `GET /api/data`, and static assets for everything else |
 | `scripts/racers.py` | Mac-only tool that adds, lists and revokes per-racer upload passwords (hashed in KV), writes each racer's `config.json` into the gitignored `racers/` folder, and packages it with `release/NickHub.exe` into a zip to send |
-| `uploader/nickhub_app.py` | The racers' app, built into `NickHub.exe`. It finds WoW Forever, installs or updates the bundled addon, and watches and uploads every account's saved file. `--check` is a dry run |
+| `uploader/nickhub_app.py` | The racers' app, built into `NickHub.exe`. It finds WoW Forever, installs or updates the bundled addon, and watches and uploads every account's saved file. `--test` (run by `Test my setup.bat` in racer zips) checks the password with an empty upload, plus WoW and the addon. `--check` is a dry run |
 | `.github/workflows/build-app.yml` | Builds `NickHub.exe` on Windows with PyInstaller, smoke-tests it against a fake WoW install, and attaches it to published releases |
 | `site/public/` | `index.html` (leaderboard home page with the launch countdown), `racer.html` (one racer's profile, served at `/<racer-name>`; `/racer?demo` shows `demo.json`), `how-it-works.html`, `how-the-race-works.html`, favicons |
 | `tools/` | Simulator: runs the real addon against a fake WoW API (`python tools/run_sim.py`, needs `pip install lupa`). It generated `site/public/demo.json` |

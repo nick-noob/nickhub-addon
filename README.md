@@ -119,7 +119,7 @@ When a friend double-clicks it, it:
 2. Installs or updates the bundled addon in `Interface\AddOns`.
 3. Watches every WoW account's saved file and uploads changes, like the uploader you run.
 
-To check it on a PC without uploading anything, run `NickHub.exe --check`.
+Each racer's zip also has `Test my setup.bat`, which runs `NickHub.exe --test`. That checks their config, has nickhub.com accept their password with an empty upload (nothing reaches the leaderboard), finds WoW Forever and installs the addon, then lists anything to fix. `NickHub.exe --check` is a dry run that shows what would be uploaded.
 
 Friends who only want the addon can download it from the [latest release](https://github.com/nick-noob/nickhub-addon/releases/latest). Either way, it needs to be installed before their first login.
 
