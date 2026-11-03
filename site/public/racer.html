@@ -1,0 +1,511 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NickHub Racer</title>
+<meta name="description" content="A NickHub racer's WoW Forever 1–60 run: levels, kills, quests, deaths and every zone along the way.">
+<meta name="theme-color" content="#0e100f" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f3efe3" media="(prefers-color-scheme: light)">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="/chart.umd.min.js"></script>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f3efe3;
+  --surface: #fbf9f2;
+  --surface-2: #e9e4d5;
+  --border: #d8d2c0;
+  --text: #1d1b16;
+  --text-2: #4f4c43;
+  --muted: #736f62;
+  --gold: #8a5f0e;
+  --gold-soft: #f0e0b8;
+  --class-ink: #5d7f2e;       /* replaced from the character's class at render */
+  --series-1: #2a78d6;
+  --series-2: #d4571f;
+  --grid: #e2dccb;
+  --critical: #c23232;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0e100f;
+    --surface: #161917;
+    --surface-2: #222622;
+    --border: #2c312c;
+    --text: #f2efe6;
+    --text-2: #c4c2b4;
+    --muted: #8e8c80;
+    --gold: #e3b85c;
+    --gold-soft: #3a2f18;
+    --class-ink: #abd473;
+    --series-1: #3987e5;
+    --series-2: #e0692f;
+    --grid: #262a26;
+    --critical: #ec6a5e;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0e100f;
+  --surface: #161917;
+  --surface-2: #222622;
+  --border: #2c312c;
+  --text: #f2efe6;
+  --text-2: #c4c2b4;
+  --muted: #8e8c80;
+  --gold: #e3b85c;
+  --gold-soft: #3a2f18;
+  --class-ink: #abd473;
+  --series-1: #3987e5;
+  --series-2: #e0692f;
+  --grid: #262a26;
+  --critical: #ec6a5e;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font: 15px/1.5 "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 1120px; margin: 0 auto; padding-block: 16px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+/* top bar */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+.brand { display: flex; align-items: center; gap: 8px; font-family: Cinzel, Georgia, serif; font-weight: 700; font-size: 17px; letter-spacing: .04em; color: var(--text); text-decoration: none; }
+.brand svg { width: 16px; height: 16px; color: var(--gold); flex: none; }
+.status { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; min-width: 0; }
+.status a { color: var(--gold); white-space: nowrap; }
+.banner { background: var(--gold-soft); color: var(--text); border-radius: 8px; padding: 9px 14px; font-size: 14px; margin-top: 14px; display: none; }
+
+/* hero */
+.hero { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 0 24px; padding: 36px 0 22px; }
+.eyebrow { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); margin: 0 0 8px; font-weight: 500; }
+h1 { font-family: Cinzel, Georgia, serif; font-weight: 700; font-size: clamp(38px, 9vw, 76px); line-height: 1; margin: 0; letter-spacing: .005em; overflow-wrap: anywhere; }
+.sub { color: var(--text-2); margin: 10px 0 0; font-size: 16px; }
+.sub a { color: var(--gold); }
+.lvl { text-align: right; line-height: 1; }
+.lvl small { display: block; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
+.lvl b { font-family: Cinzel, Georgia, serif; font-weight: 700; font-size: clamp(64px, 16vw, 132px); line-height: .9; color: var(--class-ink); font-variant-numeric: lining-nums; }
+
+/* road to 60 */
+.road { display: grid; grid-template-columns: repeat(60, minmax(0, 1fr)); gap: 2px; height: 26px; }
+.road i { background: var(--surface-2); border-radius: 1px; position: relative; overflow: hidden; }
+.road i.on { background: var(--class-ink); }
+.road i.mark:not(.on) { background: var(--border); }
+.road i u { position: absolute; inset: auto 0 0 0; background: var(--class-ink); display: block; }
+.ticks { position: relative; height: 20px; margin-top: 5px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.ticks span { position: absolute; transform: translateX(-50%); }
+.ticks span:first-child { transform: none; }
+.ticks span:last-child { transform: translateX(-100%); }
+.xp { margin-top: 12px; }
+.xp .row { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; color: var(--text-2); margin-bottom: 6px; font-variant-numeric: tabular-nums; }
+.track { height: 6px; border-radius: 3px; background: var(--surface-2); overflow: hidden; position: relative; }
+.fill { height: 100%; background: var(--gold); border-radius: 3px; }
+.rested { position: absolute; top: 0; height: 100%; background: var(--series-1); opacity: .45; }
+
+/* stat strip: hairlines come from the 1px gap showing the border colour */
+.stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin: 24px 0 12px; }
+@media (min-width: 620px) { .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (min-width: 980px) { .stats { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+.stat { background: var(--surface); padding: 12px 16px; min-width: 0; }
+.stat .k { font-size: 12px; color: var(--muted); }
+.stat .v { font-size: 25px; font-weight: 600; line-height: 1.25; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stat .s { font-size: 12px; color: var(--text-2); min-height: 18px; }
+
+/* records */
+.records { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 12px; }
+.rec { padding: 12px 16px; border-left: 2px solid var(--gold); min-width: 0; }
+.rec .k { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.rec .v { font-family: Cinzel, Georgia, serif; font-weight: 600; font-size: 19px; line-height: 1.3; margin-top: 2px; overflow-wrap: anywhere; }
+.rec .s { font-size: 13px; color: var(--text-2); }
+
+/* cards */
+.grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 12px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; min-width: 0; grid-column: span 12; }
+@media (min-width: 860px) { .span-7 { grid-column: span 7; } .span-5 { grid-column: span 5; } .span-6 { grid-column: span 6; } }
+.card h2 { font-family: Cinzel, Georgia, serif; font-size: 17px; line-height: 1.3; margin: 0 0 2px; font-weight: 600; }
+.card .hint { font-size: 13px; color: var(--muted); margin: 0 0 12px; }
+.chart { position: relative; height: 260px; }
+.chart.none canvas { display: none; }
+.chart.none { height: auto; }
+.chart.none::after { content: attr(data-msg); display: block; color: var(--muted); font-size: 14px; padding: 12px 0; }
+.legend { display: flex; gap: 16px; font-size: 13px; color: var(--text-2); margin: -4px 0 8px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+
+/* tables */
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th { text-align: left; font-weight: 500; color: var(--muted); font-size: 12px; padding: 6px 8px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--surface); }
+td { padding: 7px 8px; border-bottom: 1px solid var(--border); vertical-align: top; overflow-wrap: anywhere; }
+tr:last-child td { border-bottom: 0; }
+td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; overflow-wrap: normal; }
+.scroll { max-height: 340px; overflow: auto; }
+.pill { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 999px; background: var(--surface-2); color: var(--text-2); }
+.note { font-size: 12px; color: var(--muted); }
+.dead { color: var(--critical); }
+.empty { color: var(--muted); font-size: 14px; padding: 12px 0; border: 0; }
+
+/* zone journey */
+.zone { padding: 8px 0; border-bottom: 1px solid var(--border); }
+.zone:last-child { border-bottom: 0; }
+.zone .row { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
+.zone .row span:last-child { color: var(--text-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.zone .bar { height: 4px; margin-top: 5px; border-radius: 2px; background: var(--surface-2); overflow: hidden; }
+.zone .bar i { display: block; height: 100%; background: var(--class-ink); border-radius: 2px; }
+
+footer { margin-top: 28px; color: var(--muted); font-size: 12px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <a class="brand" href="/"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1l10 11-10 11L2 12z" fill="currentColor"/></svg>NickHub</a>
+    <div class="status">
+      <span id="updated"></span>
+      <a href="/">Leaderboard</a>
+    </div>
+  </div>
+  <div class="banner" id="banner"></div>
+
+  <section class="hero">
+    <div>
+      <p class="eyebrow">WoW Forever · Race to 60</p>
+      <h1 id="title">Loading…</h1>
+      <p class="sub" id="subtitle"></p>
+    </div>
+    <div class="lvl"><small>Level</small><b id="lvl"></b></div>
+  </section>
+
+  <div class="road" id="road" role="img"></div>
+  <div class="ticks" aria-hidden="true" id="ticks"></div>
+  <div class="xp">
+    <div class="row"><span id="xpLabel"></span><span id="xpPct"></span></div>
+    <div class="track"><div class="rested" id="rested"></div><div class="fill" id="xpFill" style="width:0"></div></div>
+  </div>
+
+  <div class="stats" id="stats"></div>
+  <div class="records" id="records"></div>
+
+  <div class="grid">
+    <section class="card span-7">
+      <h2>The climb</h2>
+      <p class="hint">Level reached by hours of /played</p>
+      <div class="chart"><canvas id="cLevel"></canvas></div>
+    </section>
+    <section class="card span-5">
+      <h2>Time per level</h2>
+      <p class="hint">Minutes of /played spent on each level</p>
+      <div class="chart"><canvas id="cPerLevel"></canvas></div>
+    </section>
+    <section class="card">
+      <h2>Where the XP came from</h2>
+      <p class="hint">XP earned at each level, split by source</p>
+      <div class="legend"><span><i style="background:var(--series-1)"></i>Mob kills</span><span><i style="background:var(--series-2)"></i>Quests</span></div>
+      <div class="chart"><canvas id="cXP"></canvas></div>
+    </section>
+    <section class="card span-6">
+      <h2>The journey</h2>
+      <p class="hint">Zones in the order visited, with time spent in each</p>
+      <div class="scroll" id="zones"></div>
+    </section>
+    <section class="card span-6">
+      <h2>Most-killed mobs</h2>
+      <p class="hint">Counts include kills finished by your pet</p>
+      <div class="scroll"><table id="tMobs"></table></div>
+    </section>
+    <section class="card span-5">
+      <h2>Kills by creature type</h2>
+      <p class="hint" id="killHint"></p>
+      <div class="chart"><canvas id="cTypes"></canvas></div>
+    </section>
+    <section class="card span-7">
+      <h2>Recent quests</h2>
+      <p class="hint" id="questHint"></p>
+      <div class="scroll"><table id="tQuests"></table></div>
+    </section>
+    <section class="card">
+      <h2>The fallen</h2>
+      <p class="hint" id="deathHint"></p>
+      <div class="scroll"><table id="tDeaths"></table></div>
+    </section>
+  </div>
+  <footer>Data from the NickHub Tracker addon · updates each time you /nh sync in game · <a href="/how-it-works" style="color:inherit">How it works</a> · <a href="/how-the-race-works" style="color:inherit">How the race works</a></footer>
+</div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  const fmtInt = (n) => (n ?? 0).toLocaleString();
+  const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const dur = (s) => {
+    if (s == null) return "—";
+    s = Math.max(0, Math.round(s));
+    const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
+    if (d) return `${d}d ${h}h`;
+    if (h) return `${h}h ${m}m`;
+    return `${m}m`;
+  };
+  const gold = (c) => {
+    c = c || 0;
+    const g = Math.floor(c / 10000), s = Math.floor((c % 10000) / 100), cp = c % 100;
+    return g ? `${fmtInt(g)}g ${s}s` : s ? `${s}s ${cp}c` : `${cp}c`;
+  };
+  const ago = (t) => {
+    const s = Date.now() / 1000 - t;
+    if (s < 90) return "just now";
+    if (s < 3600) return `${Math.round(s / 60)} min ago`;
+    if (s < 86400) return `${Math.round(s / 3600)} h ago`;
+    return new Date(t * 1000).toLocaleDateString();
+  };
+  const cap = (s) => { s = (s || "").toString(); return s.toUpperCase() === s ? s.charAt(0) + s.slice(1).toLowerCase() : s.replace(/([a-z])([A-Z])/g, "$1 $2"); };
+
+  // WoW class colours; darkened on the light theme so they stay readable
+  const CLASS_COLORS = { WARRIOR: "#c79c6e", PALADIN: "#f58cba", HUNTER: "#abd473", ROGUE: "#fff569", PRIEST: "#ffffff", SHAMAN: "#0070de", MAGE: "#69ccf0", WARLOCK: "#9482c9", DRUID: "#ff7d0a" };
+  function classInk(cls) {
+    const hex = CLASS_COLORS[(cls || "").toUpperCase()] || css("--gold");
+    if (getComputedStyle(document.documentElement).colorScheme !== "light") return hex;
+    const mix = (i) => Math.round(parseInt(hex.slice(i, i + 2), 16) * 0.55);
+    return `rgb(${mix(1)}, ${mix(3)}, ${mix(5)})`;
+  }
+
+  let charts = [], current;
+
+  // matches the leaderboard's links: "Shrim Pina" lives at /shrim-pina
+  const slug = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+
+  async function load() {
+    if (new URLSearchParams(location.search).has("demo")) {
+      const r = await fetch("/demo.json");
+      const d = await r.json();
+      return { char: d.chars[pickDefault(d.chars)], demo: true };
+    }
+    const want = slug(location.pathname);
+    if (!want || want === "racer") return { missing: "" };
+    const r = await fetch("/api/summary", { cache: "no-store" });
+    const hit = r.ok ? (await r.json()).chars.find((c) => slug(c.name) === want) : null;
+    if (!hit) return { missing: want };
+    const cr = await fetch("/api/char/" + encodeURIComponent(hit.key), { cache: "no-store" });
+    if (!cr.ok) throw new Error(`couldn't load ${hit.key}`);
+    return { char: await cr.json(), demo: false };
+  }
+
+  function pickDefault(chars) {
+    return Object.keys(chars).sort((a, b) => (chars[b].updatedAt || 0) - (chars[a].updatedAt || 0))[0];
+  }
+
+  function levelRows(c) {
+    const rows = Object.entries(c.levels || {}).map(([l, v]) => ({ level: +l, ...v })).sort((a, b) => a.level - b.level);
+    return rows;
+  }
+
+  // draws a chart, or shows msg in its place when there isn't enough data yet
+  function chart(id, ok, msg, cfg) {
+    const box = $(id).parentElement, hasLib = typeof Chart !== "undefined";
+    box.classList.toggle("none", !ok || !hasLib);
+    box.dataset.msg = hasLib ? msg : "Chart library failed to load.";
+    if (ok && hasLib) charts.push(new Chart($(id), cfg));
+  }
+
+  function render(c) {
+    current = c;
+    charts.forEach((ch) => ch.destroy());
+    charts = [];
+    document.documentElement.style.setProperty("--class-ink", classInk(c.class));
+
+    const race = cap(c.race), cls = cap(c.class);
+    $("title").textContent = c.name;
+    $("lvl").textContent = c.level;
+    $("subtitle").textContent = `${race} ${cls} · ${c.realm}${c.zone ? " · " + c.zone : ""}`;
+    $("updated").textContent = c.updatedAt ? `Updated ${ago(c.updatedAt)}` : "";
+    document.title = `${c.name} · Level ${c.level} · NickHub`;
+
+    const pct = c.xpMax ? (c.xp / c.xpMax) * 100 : 100;
+    $("xpFill").style.width = `${c.level >= 60 ? 100 : pct}%`;
+    const restedPct = c.xpMax ? Math.min(100 - pct, ((c.rested || 0) / c.xpMax) * 100) : 0;
+    $("rested").style.left = `${pct}%`;
+    $("rested").style.width = `${c.level >= 60 ? 0 : restedPct}%`;
+    $("xpLabel").textContent = c.level >= 60 ? "Level 60 reached" : `${fmtInt(c.xp)} / ${fmtInt(c.xpMax)} XP to level ${c.level + 1}${c.rested ? ` · ${fmtInt(c.rested)} rested` : ""}`;
+    $("xpPct").textContent = c.level >= 60 ? "" : `${pct.toFixed(1)}%`;
+
+    const levels = levelRows(c);
+    const kills = c.kills || [], quests = c.quests || [], deaths = c.deaths || [];
+    const lastLevel = levels[levels.length - 1];
+    const firstLevel = levels[0];
+    const gained = Math.max(0, c.level - (firstLevel ? firstLevel.level : c.level));
+    const spanPlayed = lastLevel && firstLevel && lastLevel.p != null && firstLevel.p != null ? lastLevel.p - firstLevel.p : null;
+    const avg = gained > 0 && spanPlayed != null ? spanPlayed / gained : null;
+    const xpTotal = c.xpGained?.total || 0;
+
+    // road to 60: one notch per level, the current one fills with XP
+    const reached = Object.fromEntries(levels.map((l) => [l.level, l.p]));
+    $("road").setAttribute("aria-label", `Level ${c.level} of 60`);
+    $("road").innerHTML = Array.from({ length: 60 }, (_, i) => {
+      const n = i + 1, done = n < c.level || (n === c.level && c.level >= 60), now = n === c.level && !done;
+      const tip = n in reached && reached[n] != null ? `Level ${n}, reached at ${dur(reached[n])} played` : `Level ${n}`;
+      return `<i class="${done ? "on" : ""}${n % 10 === 0 ? " mark" : ""}" title="${tip}">${now ? `<u style="height:${Math.max(8, pct)}%"></u>` : ""}</i>`;
+    }).join("");
+    $("ticks").innerHTML = [1, 10, 20, 30, 40, 50, 60].map((n) => `<span style="left:${n === 1 ? 0 : ((n - 0.5) / 60) * 100}%">${n}</span>`).join("");
+
+    const stats = [
+      ["Time played", dur(c.played), c.startedAt ? `since ${new Date(c.startedAt * 1000).toLocaleDateString()}` : ""],
+      ["Avg per level", dur(avg), gained ? `${gained} level${gained === 1 ? "" : "s"} logged` : ""],
+      ["Mobs killed", fmtInt(kills.length), c.played ? `${(kills.length / (c.played / 3600)).toFixed(0)} per hour` : ""],
+      ["Quests done", fmtInt(quests.length), xpTotal ? `${Math.round(((c.xpGained.quest || 0) / xpTotal) * 100)}% of XP` : ""],
+      ["Deaths", fmtInt(deaths.length), c.petDeaths ? `+ ${c.petDeaths} pet` : ""],
+      ["Gold", gold(c.money), ""],
+    ];
+    $("stats").innerHTML = stats.map(([k, v, s]) => `<div class="stat"><div class="k">${k}</div><div class="v">${esc(v)}</div><div class="s">${esc(s)}</div></div>`).join("");
+
+    const hasChart = typeof Chart !== "undefined";
+    const ink = css("--text-2"), grid = css("--grid"), s1 = css("--series-1"), s2 = css("--series-2"), surf = css("--surface"), classCol = css("--class-ink");
+    if (hasChart) {
+      Chart.defaults.font.family = '"IBM Plex Sans", system-ui, sans-serif';
+      Chart.defaults.color = ink;
+    }
+    const tooltip = { backgroundColor: css("--surface-2"), titleColor: css("--text"), bodyColor: css("--text-2"), borderColor: css("--border"), borderWidth: 1, padding: 10, displayColors: false };
+    const axes = (xTitle, yTitle) => ({
+      x: { grid: { display: false }, border: { color: grid }, title: { display: !!xTitle, text: xTitle }, ticks: { maxRotation: 0, autoSkipPadding: 12 } },
+      y: { grid: { color: grid }, border: { display: false }, title: { display: !!yTitle, text: yTitle }, beginAtZero: true },
+    });
+
+    // 1. level vs played hours
+    const lp = levels.filter((l) => l.p != null);
+    chart("cLevel", lp.length > 1, "Appears after your first level-up.", {
+      type: "line",
+      data: { datasets: [{ data: lp.map((l) => ({ x: l.p / 3600, y: l.level })), borderColor: classCol, backgroundColor: classCol, borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, pointHoverBorderColor: surf, pointHoverBorderWidth: 2, stepped: false, tension: 0 }] },
+      options: {
+        maintainAspectRatio: false, interaction: { mode: "nearest", axis: "x", intersect: false },
+        scales: { ...axes("Hours played", "Level"), x: { ...axes().x, type: "linear", title: { display: true, text: "Hours played" } }, y: { ...axes().y, beginAtZero: false, min: 1, max: 60 } },
+        plugins: { legend: { display: false }, tooltip: { ...tooltip, callbacks: { title: (i) => `Level ${i[0].parsed.y}`, label: (i) => `reached at ${dur(i.parsed.x * 3600)} played` } } },
+      },
+    });
+
+    // 2. minutes per level
+    const per = [];
+    for (let i = 1; i < levels.length; i++) {
+      const a = levels[i - 1], b = levels[i];
+      if (b.level === a.level + 1 && a.p != null && b.p != null) per.push({ level: a.level, min: (b.p - a.p) / 60 });
+    }
+    chart("cPerLevel", per.length > 0, "Appears after your first level-up.", {
+      type: "bar",
+      data: { labels: per.map((r) => r.level), datasets: [{ data: per.map((r) => r.min), backgroundColor: classCol, borderRadius: { topLeft: 4, topRight: 4 }, borderSkipped: "bottom", maxBarThickness: 18 }] },
+      options: {
+        maintainAspectRatio: false, scales: axes("Level", "Minutes"),
+        plugins: { legend: { display: false }, tooltip: { ...tooltip, callbacks: { title: (i) => `Level ${i[0].label} → ${+i[0].label + 1}`, label: (i) => dur(i.parsed.y * 60) } } },
+      },
+    });
+
+    // 3. xp by source per level (player level at time of gain)
+    const byLvl = {};
+    kills.forEach((k) => { if (k.x) (byLvl[k.lv] ||= { m: 0, q: 0 }).m += k.x; });
+    quests.forEach((q) => { if (q.x) (byLvl[q.lv] ||= { m: 0, q: 0 }).q += q.x; });
+    const xl = Object.keys(byLvl).map(Number).sort((a, b) => a - b);
+    chart("cXP", xl.length > 0, "Appears after your first XP from a kill or quest.", {
+      type: "bar",
+      data: {
+        labels: xl,
+        datasets: [
+          { label: "Mob kills", data: xl.map((l) => byLvl[l].m), backgroundColor: s1, borderColor: surf, borderWidth: { top: 2 }, borderSkipped: false, maxBarThickness: 18 },
+          { label: "Quests", data: xl.map((l) => byLvl[l].q), backgroundColor: s2, borderRadius: { topLeft: 4, topRight: 4 }, borderSkipped: false, maxBarThickness: 18 },
+        ],
+      },
+      options: {
+        maintainAspectRatio: false, interaction: { mode: "index", intersect: false },
+        scales: { x: { ...axes("Level").x, stacked: true }, y: { ...axes(null, "XP").y, stacked: true, ticks: { callback: (v) => (v >= 1000 ? v / 1000 + "k" : v) } } },
+        plugins: { legend: { display: false }, tooltip: { ...tooltip, displayColors: true, callbacks: { title: (i) => `Level ${i[0].label}`, label: (i) => `${i.dataset.label}: ${fmtInt(i.parsed.y)} XP` } } },
+      },
+    });
+
+    // 4. creature types
+    const npcs = c.npcs || {};
+    const typeCount = {};
+    kills.forEach((k) => { const t = npcs[k.k]?.type || "Unknown"; typeCount[t] = (typeCount[t] || 0) + 1; });
+    const types = Object.entries(typeCount).sort((a, b) => b[1] - a[1]);
+    $("killHint").textContent = kills.length ? `${fmtInt(kills.length)} kills across ${Object.keys(npcs).filter((k) => npcs[k].c).length} mob types` : "";
+    chart("cTypes", types.length > 0, "No kills logged yet.", {
+      type: "bar",
+      data: { labels: types.map((t) => t[0]), datasets: [{ data: types.map((t) => t[1]), backgroundColor: classCol, borderRadius: { topRight: 4, bottomRight: 4 }, borderSkipped: "left", maxBarThickness: 18 }] },
+      options: {
+        indexAxis: "y", maintainAspectRatio: false,
+        scales: { x: { grid: { color: grid }, border: { display: false }, beginAtZero: true }, y: { grid: { display: false }, border: { color: grid } } },
+        plugins: { legend: { display: false }, tooltip: { ...tooltip, callbacks: { label: (i) => `${fmtInt(i.parsed.x)} kills` } } },
+      },
+    });
+
+    // tables
+    const mobs = Object.values(npcs).filter((n) => n.c).sort((a, b) => b.c - a.c).slice(0, 25);
+    $("tMobs").innerHTML = mobs.length
+      ? `<tr><th>Mob</th><th>Type</th><th class="n">Levels</th><th class="n">Kills</th></tr>` +
+        mobs.map((n) => `<tr><td>${esc(n.n)}${n.cl && n.cl !== "normal" ? ` <span class="pill">${esc(n.cl)}</span>` : ""}</td><td>${esc(n.type || "—")}</td><td class="n">${n.minL ? (n.minL === n.maxL ? n.minL : `${n.minL}–${n.maxL}`) : "—"}</td><td class="n">${fmtInt(n.c)}</td></tr>`).join("")
+      : `<tr><td class="empty">No kills logged yet.</td></tr>`;
+
+    const zones = c.zones || [];
+    const zrows = [];
+    zones.forEach((z, i) => {
+      const next = zones[i + 1];
+      const end = next ? next.p : c.played;
+      const span = z.p != null && end != null ? end - z.p : null;
+      const last = zrows[zrows.length - 1];
+      if (last && last.z === z.z) { last.span = (last.span || 0) + (span || 0); last.lv2 = next ? next.lv : c.level; }
+      else zrows.push({ z: z.z, lv: z.lv, lv2: next ? next.lv : c.level, span });
+    });
+    const maxSpan = Math.max(1, ...zrows.map((z) => z.span || 0));
+    $("zones").innerHTML = zrows.length
+      ? zrows.map((z) => `<div class="zone"><div class="row"><span>${esc(z.z)}</span><span>${z.lv === z.lv2 ? `Lvl ${z.lv}` : `Lvl ${z.lv}–${z.lv2}`} · ${dur(z.span)}</span></div><div class="bar"><i style="width:${((z.span || 0) / maxSpan) * 100}%"></i></div></div>`).join("")
+      : `<p class="empty">No zones yet.</p>`;
+
+    const qXP = quests.reduce((s, q) => s + (q.x || 0), 0);
+    $("questHint").textContent = quests.length ? `${fmtInt(quests.length)} turned in · ${fmtInt(qXP)} XP · ${gold(quests.reduce((s, q) => s + (q.m || 0), 0))} rewards` : "";
+    $("tQuests").innerHTML = quests.length
+      ? `<tr><th>Quest</th><th class="n">Lvl</th><th class="n">XP</th></tr>` +
+        quests.slice(-30).reverse().map((q) => `<tr><td>${esc(q.title || `Quest #${q.id}`)}<div class="note">${esc(q.z || "")}${q.a && q.t ? ` · took ${dur(q.t - q.a)}` : ""}</div></td><td class="n">${q.lv}</td><td class="n">${fmtInt(q.x)}</td></tr>`).join("")
+      : `<tr><td class="empty">No quests turned in yet.</td></tr>`;
+
+    const killers = {};
+    deaths.forEach((d) => { const b = d.by || "Unknown"; killers[b] = (killers[b] || 0) + 1; });
+    const nemesis = Object.entries(killers).sort((a, b) => b[1] - a[1])[0];
+    $("deathHint").textContent = deaths.length ? `${deaths.length} death${deaths.length === 1 ? "" : "s"} so far` : "Deathless so far";
+    $("tDeaths").innerHTML = deaths.length
+      ? `<tr><th>Killed by</th><th>Zone</th><th class="n">Lvl</th><th class="n">At played</th></tr>` +
+        deaths.slice().reverse().map((d) => `<tr><td class="dead">${esc(d.by || "Unknown")}</td><td>${esc(d.z || "—")}</td><td class="n">${d.lv}</td><td class="n">${dur(d.p)}</td></tr>`).join("")
+      : `<tr><td class="empty">No deaths. Keep it that way.</td></tr>`;
+
+    // records only appear once there's something worth claiming
+    const ranked = per.slice().sort((a, b) => a.min - b.min);
+    const fast = ranked[0], slow = ranked[ranked.length - 1], prey = mobs[0];
+    const records = [
+      ranked.length > 1 && ["Fastest level", `Level ${fast.level}`, `done in ${dur(fast.min * 60)}`],
+      ranked.length > 1 && ["Longest grind", `Level ${slow.level}`, `took ${dur(slow.min * 60)}`],
+      prey && ["Favorite target", prey.n, `${fmtInt(prey.c)} slain`],
+      nemesis && ["Nemesis", nemesis[0], `${nemesis[1]} death${nemesis[1] === 1 ? "" : "s"}`],
+    ].filter(Boolean);
+    $("records").innerHTML = records.map(([k, v, s]) => `<div class="rec"><div class="k">${k}</div><div class="v">${esc(v)}</div><div class="s">${esc(s)}</div></div>`).join("");
+  }
+
+  load().then(({ char, demo, missing }) => {
+    if (missing !== undefined) {
+      document.title = "Racer not found · NickHub";
+      $("title").textContent = missing ? "Racer not found" : "Pick a racer";
+      $("subtitle").innerHTML = (missing ? `Nobody called “${esc(missing)}” has synced yet. ` : "") + `Racers are listed on the <a href="/">leaderboard</a>.`;
+      document.querySelectorAll(".lvl, .road, .ticks, .xp, .stats, .records, .grid, footer").forEach((el) => { el.style.display = "none"; });
+      return;
+    }
+    if (demo) {
+      $("banner").style.display = "block";
+      $("banner").textContent = "Sample profile with simulated data. Real racers are on the leaderboard.";
+    }
+    render(char);
+    const mq = matchMedia("(prefers-color-scheme: dark)");
+    mq.addEventListener?.("change", () => render(current));
+    new MutationObserver((list) => { if (list.some((m) => m.attributeName === "data-theme")) render(current); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  }).catch((e) => { $("title").textContent = "Couldn't load data"; console.error(e); });
+})();
+</script>
+</body>
+</html>

@@ -20,7 +20,7 @@ WoW Forever launches **2026-11-04 at 3:00 PM PT** (23:00 UTC). The site shows a 
 | `scripts/racers.py` | Mac-only tool that adds, lists and revokes per-racer upload passwords (hashed in KV), writes each racer's `config.json` into the gitignored `racers/` folder, and packages it with `release/NickHub.exe` into a zip to send |
 | `uploader/nickhub_app.py` | The racers' app, built into `NickHub.exe`. It finds WoW Forever, installs or updates the bundled addon, and watches and uploads every account's saved file. `--check` is a dry run |
 | `.github/workflows/build-app.yml` | Builds `NickHub.exe` on Windows with PyInstaller, smoke-tests it against a fake WoW install, and attaches it to published releases |
-| `site/public/` | `index.html` (dashboard), `how-it-works.html`, `how-the-race-works.html`, `demo.json`, favicons |
+| `site/public/` | `index.html` (leaderboard home page with the launch countdown), `racer.html` (one racer's profile, served at `/<racer-name>`; `/racer?demo` shows `demo.json`), `how-it-works.html`, `how-the-race-works.html`, favicons |
 | `tools/` | Simulator: runs the real addon against a fake WoW API (`python tools/run_sim.py`, needs `pip install lupa`). It generated `site/public/demo.json` |
 | `scripts/install-addon.ps1` | Windows script that links the addon into `World of Warcraft\<flavor>\Interface\AddOns` with a junction |
 
@@ -49,7 +49,7 @@ From Windows, commit and push site changes, then ask Nick to deploy them from th
 ## Status as of 2026-11-03
 
 - **Done:**
-  - The site is live, still showing the demo data (Shrim Pina, Horde route, simulated level 60) with a "demo data" banner.
+  - The site is live. The home page is the race leaderboard, empty until the first sync. The simulated demo run (Shrim Pina, Horde route, level 60) lives at `/racer?demo`.
   - `INGEST_TOKEN` is set in Cloudflare, and the upload endpoint answers 401 without it.
 - **Windows pipeline verified:** a TBC Anniversary test upload worked on 2026-11-03, and its test character was deleted from KV afterwards. Nick's `config.json` now points at `_forever_` with `"character": "Shrim Pina"`.
 - **Race backend live (2026-11-03):**
@@ -80,16 +80,15 @@ From Windows, commit and push site changes, then ask Nick to deploy them from th
 
 If the addon shows as **out of date**, tick "Load out of date AddOns". The `.toc` Interface line may need the Forever client's version, which `/dump select(4, GetBuildInfo())` prints.
 
-## Planned: friends leveling race (not built)
+## Friends leveling race
 
-A preview page with made-up racers is live at `/how-the-race-works`. Don't build the real thing until Nick says to.
+`/how-the-race-works` explains the race to friends, with a sample leaderboard of made-up racers.
 
 - **Racers:** Nick plus 3 friends, all on Windows.
 - **Winner:** the first to reach 60 on the calendar. Rank by level, then XP. The winner comes from the level-60 timestamp, which uses the game server's clock.
 
-Done: per-racer passwords, per-character storage, and the `/api/summary` and `/api/char/<key>` endpoints. The tool is `scripts/racers.py`.
+Built (2026-11-03): per-racer passwords (`scripts/racers.py`), per-character storage, `/api/summary` (cached about 30 seconds, because KV list operations are limited on the free plan) and `/api/char/<key>`.
+- **Leaderboard:** `index.html` ranks finished racers by who hit 60 first, then everyone else by level, then XP. It shows a race chart from each racer's `line:` timeline and group records, and refreshes every minute.
+- **Profiles:** each racer's page is `racer.html`, served at `/<name-slug>`. The Worker sends any single path segment that isn't a file to that page.
+- **Colours:** each racer's colour comes from their key's alphabetical position (`--r1`…`--r4`, a validated palette), so it doesn't change as the standings do.
 
-Still to build:
-- **Pages:** a leaderboard home page with a race chart, plus individual pages such as `/shrim-pina`. These should use `/api/summary` and `/api/char/<key>`. The current dashboard still loads everything through `/api/data`, and a level 60 run is about 500 KB.
-
-When the real leaderboard ships, remove the "Preview" label from `how-the-race-works.html`.

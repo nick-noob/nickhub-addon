@@ -1,12 +1,14 @@
 // nickhub.com — Cloudflare Worker
 // Static dashboard is served from ./public; this handles the API routes.
 //   POST /api/ingest      (Authorization: Bearer <password>) — an uploader pushes its latest snapshot
-//   GET  /api/summary     — one small entry per character, for the leaderboard
+//   GET  /api/summary     — one small entry per character, plus its level timeline, for the leaderboard
 //   GET  /api/char/<key>  — one character's full log, e.g. /api/char/Forever-Shrim%20Pina
-//   GET  /api/data        — every character in full (what the dashboard reads today)
+//   GET  /api/data        — every character in full
+//   GET  /<racer-name>    — a racer's profile page (racer.html), e.g. /shrim-pina
 //
 // KV layout:
 //   char:<realm-name>   one character's log; its metadata holds the summary, so listing is cheap
+//   line:<realm-name>   [[level, unix time], ...] for the leaderboard's race chart
 //   racer:<sha256>      a racer's hashed password -> { character } it may update
 // The INGEST_TOKEN secret is the admin password and may update any character.
 
@@ -50,12 +52,22 @@ function mayUpdate(who, key) {
 
 // small enough to fit KV metadata (1 KB), so /api/summary never reads full logs
 function summarize(c) {
-  return {
+  const meta = {
     name: c.name, realm: c.realm, class: c.class, race: c.race, faction: c.faction,
     level: c.level, xp: c.xp, xpMax: c.xpMax, played: c.played, updatedAt: c.updatedAt,
+    zone: c.zone, kills: (c.kills || []).length, quests: (c.quests || []).length,
     deaths: (c.deaths || []).length,
     reached60: c.levels?.["60"]?.t ?? null,
   };
+  if (JSON.stringify(meta).length > 900) delete meta.zone;
+  return meta;
+}
+
+function timeline(c) {
+  return Object.entries(c.levels || {})
+    .filter(([, v]) => v && v.t)
+    .map(([l, v]) => [Number(l), v.t])
+    .sort((a, b) => a[0] - b[0]);
 }
 
 async function ingest(request, env) {
@@ -76,8 +88,10 @@ async function ingest(request, env) {
     const { metadata: prev } = await env.NICKHUB.getWithMetadata("char:" + key);
     if (prev && (c.updatedAt || 0) < (prev.updatedAt || 0)) { skipped.push(key); continue; }
     await env.NICKHUB.put("char:" + key, JSON.stringify(c), { metadata: summarize(c) });
+    await env.NICKHUB.put("line:" + key, JSON.stringify(timeline(c)));
     saved[key] = { level: c.level, kills: (c.kills || []).length, quests: (c.quests || []).length };
   }
+  if (Object.keys(saved).length) await caches.default.delete(SUMMARY_CACHE);
   return json({ ok: true, chars: saved, skipped });
 }
 
@@ -92,9 +106,17 @@ async function charKeys(env) {
   return keys;
 }
 
+// KV allows few list operations a day on the free plan, so the leaderboard's summary is cached briefly
+const SUMMARY_CACHE = "https://nickhub.com/__cache/summary";
+
 async function summary(env) {
+  const hit = await caches.default.match(SUMMARY_CACHE);
+  if (hit) return hit;
   const keys = await charKeys(env);
-  return json({ chars: keys.map((k) => ({ key: k.name.slice(5), ...k.metadata })) }, 200, { "cache-control": "public, max-age=15" });
+  const lines = await Promise.all(keys.map((k) => env.NICKHUB.get("line:" + k.name.slice(5), "json")));
+  const res = json({ chars: keys.map((k, i) => ({ key: k.name.slice(5), ...k.metadata, line: lines[i] || [] })) }, 200, { "cache-control": "public, max-age=30" });
+  await caches.default.put(SUMMARY_CACHE, res.clone());
+  return res;
 }
 
 async function charData(key, env) {
@@ -128,6 +150,10 @@ export default {
       return charData(key, env);
     }
     if (url.pathname === "/api/data") return data(env);
+    // no file matched, so a single path segment is a racer's profile, e.g. /shrim-pina
+    if (/^\/[a-z0-9-]+\/?$/i.test(url.pathname) && !url.pathname.startsWith("/api")) {
+      return env.ASSETS.fetch(new Request(new URL("/racer", url), request));
+    }
     return env.ASSETS.fetch(request);
   },
 };

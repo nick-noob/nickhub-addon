@@ -104,7 +104,7 @@ footer { margin-top: 40px; color: var(--muted); font-size: 13px; }
 <div class="wrap">
   <div class="top">
     <a class="brand" href="/"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1l10 11-10 11L2 12z" fill="currentColor"/></svg>NickHub</a>
-    <a class="back" href="/">Back to the tracker</a>
+    <a class="back" href="/">Back to the leaderboard</a>
   </div>
 
   <section class="intro">
@@ -172,17 +172,16 @@ end</code></pre>
   if (request.method !== "POST") return json({ error: "POST only" }, 405);
   return ingest(request, env);
 }
-if (url.pathname === "/api/data") return data(env);
-return env.ASSETS.fetch(request);</code></pre>
-    <p class="cap">The Worker's whole routing logic: an upload, a request for stats, or the website itself.</p>
+if (url.pathname === "/api/summary") return summary(env);</code></pre>
+    <p class="cap">The start of the Worker's routing: an upload, or the leaderboard's summary. Racer profiles, full logs and the site's own files follow the same pattern.</p>
     <ul>
-      <li><strong>Uploads</strong> need the password. The check takes the same time wherever a guess goes wrong, so nobody can work it out one character at a time.</li>
-      <li><strong>Storage</strong> is Cloudflare KV, a simple key-value database. The whole run lives under one key, <code>data</code>.</li>
-      <li><strong>Merging</strong> is per character, keeping whichever copy is newest, so uploading from a second WoW install can't wipe another character.</li>
+      <li><strong>Uploads</strong> need a password. Each racer has their own, tied to their character, and Cloudflare stores only a scrambled hash of it, so a racer's uploader can't touch anyone else's run.</li>
+      <li><strong>Storage</strong> is Cloudflare KV, a simple key-value database. Each character gets its own key, plus a short summary the leaderboard reads without loading everyone's full history.</li>
+      <li><strong>Newest wins.</strong> An older copy of a character never overwrites a newer one, so syncing from two PCs is safe.</li>
     </ul>
 
     <h2>The dashboard does the math</h2>
-    <p>The Worker hands over raw data, and your browser does the rest. Records like fastest level and nemesis, the zone journey and the charts are all worked out on the page when it loads, with <a href="https://www.chartjs.org/">Chart.js</a> drawing the graphs. The colors follow the character too: hunters get WoW's hunter green.</p>
+    <p>The Worker hands over raw data, and your browser does the rest. The leaderboard works from the short summaries, and a racer's profile loads their full history. Records like fastest level and nemesis, the zone journey and the charts are all worked out on the page when it loads, with <a href="https://www.chartjs.org/">Chart.js</a> drawing the graphs. The colors follow the character too: hunters get WoW's hunter green.</p>
 
     <h2>Testing a game that wasn't out yet</h2>
     <p>How do you test a tracker for a run that hasn't happened? A simulator. A test harness fakes WoW's API and runs the real addon through a full 1–60 run, firing kills, quests, deaths and level-ups along the way, then feeds the result through the real uploader's parser. The demo data on the site comes from that run: thousands of kills, all simulated, until the first real sync replaces them.</p>
@@ -215,7 +214,7 @@ return env.ASSETS.fetch(request);</code></pre>
     </table>
     <p>All of it is open to read: <a href="https://github.com/nick-noob/nickhub-addon">view the code on GitHub</a>.</p>
 
-    <footer><a href="/">See the tracker</a> · <a href="/how-the-race-works">How the race works</a></footer>
+    <footer><a href="/">See the leaderboard</a> · <a href="/how-the-race-works">How the race works</a></footer>
   </div>
 </div>
 </body>

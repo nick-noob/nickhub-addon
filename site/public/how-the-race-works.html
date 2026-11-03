@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>How the Race Works</title>
-<meta name="description" content="A preview of the NickHub leveling race: up to four racers, one rule, and the first to level 60 on the calendar wins.">
+<meta name="description" content="How the NickHub leveling race works: up to four racers, one rule, and the first to level 60 on the calendar wins.">
 <meta property="og:type" content="article">
 <meta property="og:title" content="How the NickHub Race Works">
-<meta property="og:description" content="Up to four racers, one rule: first to level 60 wins. A preview of the planned race leaderboard.">
+<meta property="og:description" content="Up to four racers, one rule: first to level 60 wins. How the race and its leaderboard work.">
 <meta property="og:url" content="https://nickhub.com/how-the-race-works">
 <meta name="theme-color" content="#0e100f" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#f3efe3" media="(prefers-color-scheme: light)">
@@ -146,14 +146,14 @@ footer { margin-top: 40px; color: var(--muted); font-size: 13px; }
 <div class="wrap">
   <div class="top">
     <a class="brand" href="/"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1l10 11-10 11L2 12z" fill="currentColor"/></svg>NickHub</a>
-    <a class="back" href="/">Back to the tracker</a>
+    <a class="back" href="/">Back to the leaderboard</a>
   </div>
 
   <section class="intro">
     <p class="eyebrow">The race to 60</p>
     <h1>One rule: first to 60 wins</h1>
-    <p class="lede">NickHub is growing from one character's tracker into a race hub. Up to four friends, each on their own WoW Forever run, all on one leaderboard.</p>
-    <span class="status-tag">Preview: not built yet, and details may change</span>
+    <p class="lede">NickHub is a race hub: up to four friends, each on their own WoW Forever run, all on one leaderboard.</p>
+    <span class="status-tag">Live: the leaderboard is the <a href="/">home page</a></span>
   </section>
 
   <p class="sample-label">Sample leaderboard. The racers and numbers below are made up.</p>
@@ -175,11 +175,11 @@ footer { margin-top: 40px; color: var(--muted); font-size: 13px; }
       <li><strong>Sync order doesn't matter.</strong> If two racers ding 60 close together, the earlier timestamp wins, even if that racer syncs second.</li>
     </ul>
 
-    <h2>What the hub will show</h2>
+    <h2>What the hub shows</h2>
     <ul>
       <li><strong>The leaderboard</strong> as the home page, with a Road to 60 track for every racer.</li>
       <li><strong>The race chart</strong>, with everyone's climb on one graph.</li>
-      <li><strong>Group records</strong> such as most deaths, fastest level and worst nemesis.</li>
+      <li><strong>Group records</strong> for most kills, most quests and most deaths.</li>
       <li><strong>A page for each racer</strong> with the full dashboard, like <code>nickhub.com/shrim-pina</code>.</li>
     </ul>
 
@@ -192,8 +192,8 @@ footer { margin-top: 40px; color: var(--muted); font-size: 13px; }
     </ol>
     <p>That's the whole job. The app finds your saved file, watches it, and sends updates to the site.</p>
 
-    <h2>How it will work behind the scenes</h2>
-    <p>Each racer's data takes the same route as today: addon, saved file, uploader, Cloudflare Worker, dashboard. <a href="/how-it-works">How it works</a> walks through all of that. Three things change for a race:</p>
+    <h2>How it works behind the scenes</h2>
+    <p>Each racer's data takes the same route as today: addon, saved file, uploader, Cloudflare Worker, dashboard. <a href="/how-it-works">How it works</a> walks through all of that. Three things make it work for a race:</p>
     <ul>
       <li><strong>Everyone gets their own password</strong>, tied to one character. Your app can only update your run, and a lost password can be replaced without touching anyone else.</li>
       <li><strong>Each character gets its own storage</strong>, so two racers syncing at the same moment can't overwrite each other.</li>
@@ -203,7 +203,7 @@ footer { margin-top: 40px; color: var(--muted); font-size: 13px; }
     <h2>Good to know</h2>
     <div class="qa">
       <h3>Is the leaderboard live?</h3>
-      <p>It updates when a racer syncs or logs out, not after every kill. Someone can stay quiet and surprise everyone, so standings are only as fresh as each racer's last sync. The leaderboard will show when that was.</p>
+      <p>It updates when a racer syncs or logs out, not after every kill. Someone can stay quiet and surprise everyone, so standings are only as fresh as each racer's last sync. The leaderboard shows when that was.</p>
     </div>
     <div class="qa">
       <h3>What if I forget to open the app?</h3>
@@ -222,7 +222,7 @@ footer { margin-top: 40px; color: var(--muted); font-size: 13px; }
       <p>Your password protects your run from other people, but data comes from each racer's own PC, so it's an honor system. Among friends, the bragging rights only count if they're real.</p>
     </div>
 
-    <footer><a href="/">See the tracker</a> · <a href="/how-it-works">How it works</a></footer>
+    <footer><a href="/">See the leaderboard</a> · <a href="/how-it-works">How it works</a></footer>
   </div>
 </div>
 
