@@ -18,3 +18,9 @@ tools/sample.json
 
 # local source images
 work-work.png
+
+# release builds
+release/
+
+# per-racer configs (contain passwords)
+racers/

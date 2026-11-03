@@ -96,6 +96,20 @@ Each `/nh sync` or logout → the uploader notices within a few seconds → nick
 
 Optional `"character": "Shrim Pina"` in config.json uploads only that character (skips your TBC test alt).
 
+## Adding racers (friends)
+
+Each friend gets their own upload password, tied to their character. Their uploader can update that character and nothing else, so nobody can overwrite another run. Run this on the Mac, where Wrangler is logged in:
+
+```bash
+python3 scripts/racers.py add "Character Name"     # registers them and writes racers/<name>/config.json
+python3 scripts/racers.py list                     # who's registered
+python3 scripts/racers.py revoke "Character Name"  # their password stops working; their stats stay
+```
+
+Send each friend their `config.json` privately. It contains their password, and the `racers/` folder is gitignored so it can't be committed. To replace a lost password, revoke it and add the friend again. Your own `INGEST_TOKEN` stays the admin password and can update any character.
+
+Friends install the addon from the [latest release](https://github.com/nick-noob/nickhub-addon/releases/latest), before their first login.
+
 ## Testing on TBC Anniversary before launch
 
 1. Install the addon there, log in. You should see `NickHub tracking <name>` in chat.
