@@ -131,6 +131,7 @@ end
 ---------------------------------------------------------------------------
 local tagged = {}     -- guid -> { name, t } mobs damaged by me or my pet
 local guidLevel = {}  -- guid -> mob level (seen via target/mouseover/nameplate)
+local levelByName = {} -- mob name -> last level seen, for kills known only by name
 local pendingXP = {}  -- xp messages that arrived before the death event
 local lastAttacker
 local XP_PATTERN = fmtToPattern(COMBATLOG_XPGAIN_FIRSTPERSON)
@@ -143,6 +144,7 @@ local function learnUnit(unit)
   if not k then return end
   local lvl = UnitLevel(unit)
   guidLevel[guid] = lvl
+  levelByName[UnitName(unit) or ""] = lvl
   local n = char.npcs[k] or { n = UnitName(unit), c = 0 }
   n.n = UnitName(unit) or n.n
   n.type = UnitCreatureType(unit) or n.type
@@ -154,14 +156,26 @@ local function learnUnit(unit)
   char.npcs[k] = n
 end
 
+-- a mob seen by targeting, so a kill known only by name still gets its type and level
+local function npcKeyByName(name)
+  local any
+  for k, n in pairs(char.npcs) do
+    if n.n == name then
+      if n.type then return k end
+      any = any or k
+    end
+  end
+  return any or ("name:" .. (name or "?"))
+end
+
 local function recordKill(guid, name)
-  local k = npcKey(guid) or ("name:" .. (name or "?"))
+  local k = npcKey(guid) or npcKeyByName(name)
   local n = char.npcs[k] or { n = name, c = 0 }
   n.n = n.n or name
   n.c = (n.c or 0) + 1
   char.npcs[k] = n
 
-  local kill = { t = now(), p = played(), k = k, l = guidLevel[guid], lv = UnitLevel("player"), z = zone() }
+  local kill = { t = now(), p = played(), k = k, l = (guid and guidLevel[guid]) or levelByName[name], lv = UnitLevel("player"), z = zone() }
   -- XP message may have arrived just before the death event
   for i = #pendingXP, 1, -1 do
     local px = pendingXP[i]
@@ -172,8 +186,8 @@ local function recordKill(guid, name)
     end
   end
   table.insert(char.kills, kill)
-  tagged[guid] = nil
-  guidLevel[guid] = nil
+  if guid then tagged[guid] = nil; guidLevel[guid] = nil end
+  return kill
 end
 
 local DAMAGE = {
@@ -224,7 +238,19 @@ local function onXPMessage(text)
       return
     end
   end
-  table.insert(pendingXP, { name = name, xp = xp, at = GetTime() })
+  local px = { name = name, xp = xp, at = GetTime() }
+  table.insert(pendingXP, px)
+  -- the combat log normally claims this within a moment. WoW Forever doesn't give addons the
+  -- combat log, so if nothing claims it, the XP message itself is the kill
+  C_Timer.After(1, function()
+    for i = #pendingXP, 1, -1 do
+      if pendingXP[i] == px then
+        table.remove(pendingXP, i)
+        recordKill(nil, name).x = xp
+        return
+      end
+    end
+  end)
 end
 
 -- clean up stale tags every minute so the table doesn't grow forever
@@ -370,7 +396,7 @@ end
 
 function handlers.PLAYER_LEVEL_UP(level) onLevelUp(level) end
 function handlers.PLAYER_XP_UPDATE() onXPUpdate() end
-function handlers.COMBAT_LOG_EVENT_UNFILTERED() onCombatLog() end
+function handlers.COMBAT_LOG_EVENT_UNFILTERED() pcall(onCombatLog) end -- a client that hides the log shouldn't spam errors
 function handlers.CHAT_MSG_COMBAT_XP_GAIN(text) onXPMessage(text) end
 function handlers.QUEST_COMPLETE()
   pendingTitle = { title = GetTitleText and GetTitleText() or nil, id = GetQuestID and GetQuestID() or nil }

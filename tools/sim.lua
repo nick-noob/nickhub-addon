@@ -89,7 +89,10 @@ function CombatLogGetCurrentEventInfo() return table.unpack(cleu, 1, 15) end
 function CreateFrame()
   frame = { events = {} }
   function frame:SetScript(_, fn) self.fn = fn end
-  function frame:RegisterEvent(e) self.events[e] = true end
+  function frame:RegisterEvent(e)
+    if NO_CLEU and e == "COMBAT_LOG_EVENT_UNFILTERED" then error("unknown event") end -- like WoW Forever
+    self.events[e] = true
+  end
   return frame
 end
 local function fire(e, ...) if frame.events[e] then frame.fn(frame, e, ...) end end

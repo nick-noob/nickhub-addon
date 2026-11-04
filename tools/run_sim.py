@@ -15,6 +15,7 @@ g.ADDON_PATH = os.path.join(root, "addon", "NickHubTracker", "NickHubTracker.lua
 g.OUT_PATH = out_sv
 g.TARGET_LEVEL = target
 g.SEED = 7
+g.NO_CLEU = os.environ.get("NO_CLEU") == "1"  # simulate a client that hides the combat log
 lua.execute(open(os.path.join(root, "tools", "sim.lua")).read())
 res = g.RESULT
 print("sim played:", res.played, "| /played chat lines leaked:", res.playedPrinted, "| sync popups:", res.popups)
