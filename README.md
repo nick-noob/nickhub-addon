@@ -96,6 +96,8 @@ Each `/nh sync` or logout → the uploader notices within a few seconds → nick
 
 Optional `"character": "Shrim Pina"` in config.json uploads only that character (skips your TBC test alt).
 
+Before launch, double-click `uploader\test_setup.bat`. It runs the racers' setup test from source: it checks your password with an empty upload, finds WoW Forever and shows the saved data it would send. Run `install-addon.ps1 -Flavor _forever_` first, so the test sees your junction and leaves it alone instead of copying the addon in.
+
 ## Adding racers (friends)
 
 Each friend gets their own upload password, tied to their character. Their uploader can update that character and nothing else, so nobody can overwrite another run. Run this on the Mac, where Wrangler is logged in:
