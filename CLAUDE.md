@@ -78,7 +78,7 @@ From Windows, commit and push site changes, then ask Nick to deploy them from th
    - Rerun the install with `-Flavor _forever_` and point `config.json` at the Forever folder.
    - Log in as Shrim Pina with the addon already installed, so it captures everything from level 1.
 
-If the addon shows as **out of date**, tick "Load out of date AddOns". The `.toc` Interface line may need the Forever client's version, which `/dump select(4, GetBuildInfo())` prints.
+If the addon shows as **out of date**, tick "Load out of date AddOns". **Incompatible** means the client's interface number is missing from the `.toc` Interface line, and the checkbox can't override it. The number comes from the version at the bottom-left of the login screen (1.60.1 → 16001) or `/dump select(4, GetBuildInfo())`. Forever shipped as 1.60.1 (build 70755) on 2026-11-02, and the `.toc` lists 16000–16005 to cover launch-day patches. A `.toc` change also needs a new release and re-sent racer zips, because `NickHub.exe` bundles the addon.
 
 ## Friends leveling race
 

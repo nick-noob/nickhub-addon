@@ -68,7 +68,7 @@ This links `addon\NickHubTracker` into `World of Warcraft\<flavor>\Interface\Add
 
 No PowerShell? Copy the `addon\NickHubTracker` folder into `Interface\AddOns\` by hand.
 
-If the character screen lists it as **out of date**, tick *Load out of date AddOns*, or run `/dump select(4, GetBuildInfo())` in game and put that number on the `## Interface:` line of `NickHubTracker.toc`.
+If the character screen lists it as **out of date**, tick *Load out of date AddOns*. If it says **Incompatible**, the checkbox can't help: the client's interface number has to be on the `## Interface:` line of `NickHubTracker.toc`. Work it out from the version at the bottom-left of the login screen (1.60.1 → 16001, that is 1×10000 + 60×100 + 1), or run `/dump select(4, GetBuildInfo())` in game.
 
 In game:
 
