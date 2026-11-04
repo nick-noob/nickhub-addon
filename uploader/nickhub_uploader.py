@@ -212,7 +212,11 @@ def build_payload(path, character=None):
     data = parse_saved_variables(path).get("NickHubTrackerDB") or {}
     chars = data.get("chars") or {}
     if character:
-        chars = {k: v for k, v in chars.items() if k.lower().endswith("-" + character.lower()) or k.lower() == character.lower()}
+        # WoW Forever's UnitName gives only the first name ("Shrim" for Shrim Pina), so match that too
+        names = {character.lower(), character.lower().split()[0]}
+        chars = {k: v for k, v in chars.items() if any(k.lower().endswith("-" + n) or k.lower() == n for n in names)}
+        for c in chars.values():
+            c["name"] = character  # show the full name on the site
     for c in chars.values():
         # a contiguous 1..N levels table serializes as a Lua array; key it by level again
         if isinstance(c.get("levels"), list):

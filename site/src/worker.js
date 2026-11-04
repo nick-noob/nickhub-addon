@@ -45,9 +45,11 @@ async function authorize(request, env) {
   return racer && racer.character ? { admin: false, character: racer.character } : null;
 }
 
-// keys are "<realm>-<name>"; a racer may only update their own character
+// keys are "<realm>-<name>"; a racer may only update their own character.
+// WoW Forever's UnitName gives only the first name ("Shrim" for Shrim Pina), so accept that too
 function mayUpdate(who, key) {
-  return who.admin || key.toLowerCase().endsWith("-" + who.character.toLowerCase());
+  const full = who.character.toLowerCase();
+  return who.admin || [full, full.split(/\s+/)[0]].some((n) => key.toLowerCase().endsWith("-" + n));
 }
 
 // small enough to fit KV metadata (1 KB), so /api/summary never reads full logs
@@ -87,6 +89,7 @@ async function ingest(request, env) {
     if (!c || typeof c !== "object" || !mayUpdate(who, key)) { skipped.push(key); continue; }
     const { metadata: prev } = await env.NICKHUB.getWithMetadata("char:" + key);
     if (prev && (c.updatedAt || 0) < (prev.updatedAt || 0)) { skipped.push(key); continue; }
+    if (!who.admin) c.name = who.character;  // the full name they registered, not just the first name
     await env.NICKHUB.put("char:" + key, JSON.stringify(c), { metadata: summarize(c) });
     await env.NICKHUB.put("line:" + key, JSON.stringify(timeline(c)));
     saved[key] = { level: c.level, kills: (c.kills || []).length, quests: (c.quests || []).length };
