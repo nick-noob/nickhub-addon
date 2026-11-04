@@ -48,8 +48,9 @@ async function authorize(request, env) {
 // keys are "<realm>-<name>"; a racer may only update their own character.
 // WoW Forever's UnitName gives only the first name ("Shrim" for Shrim Pina), so accept that too
 function mayUpdate(who, key) {
+  if (who.admin) return true;
   const full = who.character.toLowerCase();
-  return who.admin || [full, full.split(/\s+/)[0]].some((n) => key.toLowerCase().endsWith("-" + n));
+  return [full, full.split(/\s+/)[0]].some((n) => key.toLowerCase().endsWith("-" + n));
 }
 
 // small enough to fit KV metadata (1 KB), so /api/summary never reads full logs
