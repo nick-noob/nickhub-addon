@@ -83,7 +83,7 @@ If the addon shows as **out of date**, tick "Load out of date AddOns". **Incompa
 ## WoW Forever client quirks (found on launch day, 2026-11-04)
 
 - **Interface number:** the client is 1.60.x, so the `.toc` lists 16000–16005. A version outside that list shows the addon as **Incompatible**.
-- **Names:** `UnitName` returns only the first name ("Shrim"), so keys look like `<realm>-Shrim`. The uploader and the Worker match a racer's registered full name or its first word, and the site shows the full name.
+- **Names:** `UnitName` returns only the first name ("Shrim"), which an account's characters can share. `GetUnitName("player", true)` returns "Shrim Pina", so keys are `<realm>-Shrim Pina`. Before that fix, keys were `<realm>-Shrim` and mixed characters together. The addon moves such an entry to whichever character reached its highest level. The uploader matches full names only, and the Worker still accepts a first-name key from older apps.
 - **No combat log:** registering `COMBAT_LOG_EVENT_UNFILTERED` is a forbidden action there. It caused a "blocked from an action" popup (`UNKNOWN()`) on every load, so the addon skips it on interface 16000–19999. Kills come from the "X dies, you gain N experience" messages instead, so killed-by on deaths and pet deaths stay blank.
 - **/played:** the timed `RequestTimePlayed` after login and level-up works. Don't replace `ChatFrame_DisplayTimePlayed`; the addon mutes the chat windows instead.
 - **Blocked calls:** if WoW blocks one, the addon prints "WoW blocked a call to …" in chat.

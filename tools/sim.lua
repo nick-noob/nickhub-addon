@@ -36,13 +36,16 @@ end
 unpack = table.unpack
 
 -- ---------- player state ----------
-local P = { level = 1, xp = 0, money = 0, zone = "Durotar", combat = false }
+local P = { level = START_LEVEL or 1, xp = 0, money = 0, zone = "Durotar", combat = false }
 local XPMAX = {}
 for l = 1, 60 do XPMAX[l] = math.floor(400 + (l - 1) * 180 + (l ^ 2.35) * 9) end
 local PLAYER_GUID = "Player-4395-0A1B2C3D"
 local PET_GUID = "Pet-0-4395-0-1-1234-0100ABCD"
 
-function UnitName(u) if u == "player" then return "Shrim Pina" end return units[u] and units[u].name end
+-- like WoW Forever when NO_CLEU is set: UnitName is only the first name, GetUnitName(unit, true) the full one
+local FULL = FULL_NAME or "Shrim Pina"
+function UnitName(u) if u == "player" then return NO_CLEU and FULL:match("^%S+") or FULL end return units[u] and units[u].name end
+function GetUnitName(u, showServer) if u == "player" and showServer then return FULL end return UnitName(u) end
 function GetRealmName() return "Forever" end
 function UnitClass() return "Hunter", "HUNTER" end
 function UnitRace() return "Orc", "Orc" end
@@ -107,6 +110,7 @@ function RequestTimePlayed() C_Timer.After(0.2, function() fire("TIME_PLAYED_MSG
 local function typeSlash(cmd) SlashCmdList.NICKHUB(cmd) end
 
 -- ---------- load addon ----------
+if PRESEED_FILE then dofile(PRESEED_FILE) end -- an earlier SavedVariables file, to test upgrades
 local chunk = assert(loadfile(ADDON_PATH))
 local function login()
   chunk("NickHubTracker", {})

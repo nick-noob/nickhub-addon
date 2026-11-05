@@ -53,6 +53,22 @@ end
 ---------------------------------------------------------------------------
 -- Character record
 ---------------------------------------------------------------------------
+-- WoW Forever's UnitName is only the first name ("Shrim"), shared by an account's characters,
+-- while GetUnitName(unit, true) gives "Shrim Pina". Elsewhere both are the plain name
+local function fullName()
+  local short = UnitName("player")
+  local full = GetUnitName and GetUnitName("player", true)
+  full = full and full:gsub("%-.*$", "") -- drop a "-Realm" suffix
+  if full and full:sub(1, #short) == short then return full end
+  return short
+end
+
+local function highestLevel(c)
+  local top = 0
+  for l in pairs(c.levels or {}) do top = math.max(top, tonumber(l) or 0) end
+  return top
+end
+
 local function initChar()
   NickHubTrackerDB = NickHubTrackerDB or {}
   db = NickHubTrackerDB
@@ -60,11 +76,18 @@ local function initChar()
   db.chars = db.chars or {}
   db.settings = db.settings or { autoSync = false }
 
-  playerName = UnitName("player")
+  playerName = fullName()
   local realm = GetRealmName()
   local key = realm .. "-" .. playerName
+  -- older versions keyed Forever characters by first name, which mixed an account's characters.
+  -- That entry belongs to whoever reached its highest level, not to a newer alt
+  local old = realm .. "-" .. UnitName("player")
+  if old ~= key and db.chars[old] and not db.chars[key] and highestLevel(db.chars[old]) <= UnitLevel("player") then
+    db.chars[key], db.chars[old] = db.chars[old], nil
+  end
   db.chars[key] = db.chars[key] or {}
   char = db.chars[key]
+  char.guid = playerGUID
 
   local _, class = UnitClass("player")
   local _, race = UnitRace("player")

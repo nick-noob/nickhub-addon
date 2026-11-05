@@ -46,7 +46,7 @@ async function authorize(request, env) {
 }
 
 // keys are "<realm>-<name>"; a racer may only update their own character.
-// WoW Forever's UnitName gives only the first name ("Shrim" for Shrim Pina), so accept that too
+// addon versions before full names keyed Forever characters by first name ("Shrim"), so accept that too
 function mayUpdate(who, key) {
   if (who.admin) return true;
   const full = who.character.toLowerCase();
