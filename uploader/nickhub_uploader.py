@@ -208,12 +208,14 @@ def load_config():
     return cfg
 
 
-def build_payload(path, character=None):
+def build_payload(path, main=None):
+    """Every character in the file. `main` (config.json's "character") tells the site which one is
+    racing; the rest show up as its alts."""
     data = parse_saved_variables(path).get("NickHubTrackerDB") or {}
     chars = data.get("chars") or {}
-    if character:
-        # full names only: an old first-name key ("<realm>-Shrim") can mix an account's characters
-        chars = {k: v for k, v in chars.items() if k.lower().endswith("-" + character.lower()) or k.lower() == character.lower()}
+    # an alt without a guid hasn't logged in since v3.1.0, so it may be an old first-name entry
+    # ("<realm>-Shrim") that mixes characters; it uploads once it logs in again
+    chars = {k: c for k, c in chars.items() if c.get("guid") or (main and k.lower().endswith("-" + main.lower()))}
     for c in chars.values():
         # a contiguous 1..N levels table serializes as a Lua array; key it by level again
         if isinstance(c.get("levels"), list):
@@ -223,7 +225,10 @@ def build_payload(path, character=None):
             if isinstance(c.get(k), dict):  # sparse arrays come through as dicts
                 c[k] = [c[k][i] for i in sorted(c[k], key=lambda x: int(x))]
             c.setdefault(k, [])
-    return {"version": data.get("version"), "uploadedAt": int(time.time()), "chars": chars}
+    payload = {"version": data.get("version"), "uploadedAt": int(time.time()), "chars": chars}
+    if main:
+        payload["main"] = main
+    return payload
 
 
 def upload(cfg, payload):

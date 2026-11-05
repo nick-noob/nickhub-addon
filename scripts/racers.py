@@ -10,8 +10,9 @@ Manage race passwords for nickhub.com. Run on the Mac, where Wrangler is logged 
 `package` (also run by `add`) needs release/NickHub.exe. Get the latest build with:
     gh release download --pattern NickHub.exe --dir release --clobber
 
-Each password is stored in Cloudflare KV only as a SHA-256 hash, tied to one character, so a
-racer's uploader can update that character and nothing else. The password itself is only
+Each password is stored in Cloudflare KV only as a SHA-256 hash, tied to the racer's main. Their
+uploader sends the main and any alts, and a character belongs to whoever uploaded it first, so
+nobody can update anyone else's characters. The password itself is only
 written to the racer's config.json, which lives in the gitignored racers/ folder. Send it
 to the racer privately and never commit it.
 

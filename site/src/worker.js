@@ -9,8 +9,10 @@
 // Storage:
 //   D1 table chars (schema.sql): one row per character with its summary, race-chart line and
 //     gzipped full log. Unlike KV, a write shows up on the very next request
-//   KV racer:<sha256>   a racer's hashed password -> { character } it may update
-// The INGEST_TOKEN secret is the admin password and may update any character.
+//   KV racer:<sha256>   a racer's hashed password -> { character }, their main
+// A racer may upload their main and any alts. The first upload of a character makes that racer its
+// owner, and after that nobody else's password can update it. The INGEST_TOKEN secret is the
+// admin password and may update any character.
 
 const MAX_BYTES = 20 * 1024 * 1024;
 
@@ -45,12 +47,9 @@ async function authorize(request, env) {
   return racer && racer.character ? { admin: false, character: racer.character } : null;
 }
 
-// keys are "<realm>-<name>"; a racer may only update their own character.
-// addon versions before full names keyed Forever characters by first name ("Shrim"), so accept that too
-function mayUpdate(who, key) {
-  if (who.admin) return true;
-  const full = who.character.toLowerCase();
-  return [full, full.split(/\s+/)[0]].some((n) => key.toLowerCase().endsWith("-" + n));
+// keys are "<realm>-<name>", so a racer's main is the key ending in their registered name
+function isMain(key, main) {
+  return !!main && key.toLowerCase().endsWith("-" + main.toLowerCase());
 }
 
 // the leaderboard's view of a character, so /api/summary never reads full logs
@@ -91,19 +90,27 @@ async function ingest(request, env) {
   try { body = await request.json(); } catch { return json({ error: "invalid JSON" }, 400); }
   if (!body || typeof body.chars !== "object") return json({ error: "missing chars" }, 400);
 
-  // each character is its own row, so two uploaders can't overwrite each other.
-  // The upsert's WHERE skips a snapshot older than the saved one in the same step
+  // the racer's main: their registered character, or for the admin whatever their uploader names
+  const main = who.admin ? (typeof body.main === "string" ? body.main : "") : who.character;
+  const owner = (main || "admin").toLowerCase();
+
+  // each character is its own row, so two uploaders can't overwrite each other. The upsert's WHERE
+  // skips, in the same step, a snapshot older than the saved one and a character someone else owns.
+  // A row from before owners existed goes to whoever uploads it as their main
   const upsert = env.DB.prepare(
-    `INSERT INTO chars (key, summary, line, log, updated_at) VALUES (?1, ?2, ?3, ?4, ?5)
+    `INSERT INTO chars (key, summary, line, log, updated_at, owner) VALUES (?1, ?2, ?3, ?4, ?5, ?6)
      ON CONFLICT(key) DO UPDATE SET summary = excluded.summary, line = excluded.line,
-       log = excluded.log, updated_at = excluded.updated_at
-     WHERE excluded.updated_at >= chars.updated_at`);
+       log = excluded.log, updated_at = excluded.updated_at, owner = COALESCE(chars.owner, excluded.owner)
+     WHERE excluded.updated_at >= chars.updated_at
+       AND (?7 OR chars.owner = excluded.owner OR (chars.owner IS NULL AND ?8))`);
   const saved = {}, skipped = [];
   for (const [key, c] of Object.entries(body.chars)) {
-    if (!c || typeof c !== "object" || !mayUpdate(who, key)) { skipped.push(key); continue; }
-    if (!who.admin) c.name = who.character;  // the full name they registered, not just the first name
-    const res = await upsert.bind(key, JSON.stringify(summarize(c)), JSON.stringify(timeline(c)),
-      await gzip(JSON.stringify(c)), c.updatedAt || 0).run();
+    if (!c || typeof c !== "object") { skipped.push(key); continue; }
+    const primary = isMain(key, main);
+    if (primary && !who.admin) c.name = who.character;
+    const sum = { ...summarize(c), alt: !!main && !primary, main: main || null };
+    const res = await upsert.bind(key, JSON.stringify(sum), JSON.stringify(timeline(c)),
+      await gzip(JSON.stringify(c)), c.updatedAt || 0, owner, who.admin ? 1 : 0, primary ? 1 : 0).run();
     if (!res.meta.changes) { skipped.push(key); continue; }
     saved[key] = { level: c.level, kills: (c.kills || []).length, quests: (c.quests || []).length };
   }

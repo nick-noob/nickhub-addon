@@ -123,6 +123,7 @@ h1 { font-family: Cinzel, Georgia, serif; font-weight: 700; font-size: clamp(36p
 .racer:hover, .racer:focus-visible { background: var(--surface-2); }
 .racer .pos { font-family: Cinzel, Georgia, serif; font-weight: 700; font-size: 22px; color: var(--muted); }
 .racer.lead .pos { color: var(--gold); }
+.racer.alt .who b { font-weight: 500; color: var(--text-2); }
 .racer .who { min-width: 0; line-height: 1.35; }
 .racer .who b { font-family: Cinzel, Georgia, serif; font-size: 19px; font-weight: 700; }
 .racer .who small { display: block; font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
@@ -219,8 +220,10 @@ footer a { color: inherit; }
   const when = (t) => new Date(t * 1000).toLocaleString(undefined, { weekday: "long", month: "long", day: "numeric", hour: "numeric", minute: "2-digit" });
   // matches the profile page: "Shrim Pina" lives at /shrim-pina
   const slug = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
-  // a racer keeps their colour as the standings change; past four, extra racers share a neutral
+  // a racer keeps their colour as the standings change, and their alts share it; past four, extra racers share a neutral
   const COLORS = ["--r1", "--r2", "--r3", "--r4"];
+  // which racer a character belongs to: its main's name (rows from before alts fall back to their own)
+  const racerOf = (c) => String(c.main || c.name || c.key).toLowerCase();
 
   // WoW Forever goes live Nov 4 2026, 3pm PT; the band removes itself at launch
   const LAUNCH = Date.UTC(2026, 10, 4, 23, 0, 0);
@@ -254,7 +257,7 @@ footer a { color: inherit; }
   let chars = [], chart;
 
   function colorOf(c) {
-    const i = chars.map((x) => x.key).sort().indexOf(c.key);
+    const i = [...new Set(chars.map(racerOf))].sort().indexOf(racerOf(c));
     return i < COLORS.length ? `var(${COLORS[i]})` : "var(--muted)";
   }
 
@@ -265,15 +268,17 @@ footer a { color: inherit; }
       $("sub").textContent = "First to level 60 on the calendar wins.";
       return;
     }
-    $("sub").textContent = `First to level 60 on the calendar wins. ${ranked.length} racer${ranked.length === 1 ? "" : "s"} on the board.`;
+    const mains = ranked.filter((c) => !c.alt).length, alts = ranked.length - mains;
+    $("sub").textContent = `First to level 60 on the calendar wins. ${mains} racer${mains === 1 ? "" : "s"}${alts ? ` and ${alts} alt${alts === 1 ? "" : "s"}` : ""} on the board.`;
+    const leader = ranked.find((c) => !c.alt);
     $("board").innerHTML = ranked.map((c, i) => {
       const lv = c.level || 0, done = lv >= 60;
       const pct = !done && c.xpMax ? Math.min(100, ((c.xp || 0) / c.xpMax) * 100) : 0;
       const cells = Array.from({ length: 60 }, (_, n) =>
         n + 1 < lv || done ? '<i class="on"></i>' : n + 1 === lv ? `<i><u style="width:${pct.toFixed(0)}%"></u></i>` : "<i></i>").join("");
-      const bits = [`${cap(c.race)} ${cap(c.class)}`.trim(), c.zone, c.updatedAt ? `synced ${ago(c.updatedAt)}` : ""].filter(Boolean);
+      const bits = [c.alt ? `alt of ${c.main}` : "", `${cap(c.race)} ${cap(c.class)}`.trim(), c.zone, c.updatedAt ? `synced ${ago(c.updatedAt)}` : ""].filter(Boolean);
       const note = done ? `hit 60 ${new Date(c.reached60 * 1000).toLocaleDateString()}` : `${pct.toFixed(0)}% to ${lv + 1}`;
-      return `<a class="racer${i === 0 ? " lead" : ""}" href="/${slug(c.name)}" style="--c:${colorOf(c)}" aria-label="${esc(`${c.name}, rank ${i + 1}, level ${lv}`)}">
+      return `<a class="racer${c === leader ? " lead" : ""}${c.alt ? " alt" : ""}" href="/${slug(c.name)}" style="--c:${colorOf(c)}" aria-label="${esc(`${c.name}, rank ${i + 1}, level ${lv}`)}">
         <div class="pos">${i + 1}</div>
         <div class="who"><b>${esc(c.name)}</b><small>${esc(bits.join(" · "))}</small></div>
         <div class="lv">${lv}<small>${esc(note)}</small></div>
@@ -281,7 +286,8 @@ footer a { color: inherit; }
       </a>`;
     }).join("");
 
-    const first = ranked.find((c) => c.reached60);
+    // alts are on the board for fun; the race is between mains
+    const first = ranked.find((c) => c.reached60 && !c.alt);
     $("winner").hidden = !first;
     if (first) $("winner").innerHTML = `<b>${esc(first.name)}</b> won the race, hitting level 60 on ${esc(when(first.reached60))}.`;
 
@@ -301,18 +307,19 @@ footer a { color: inherit; }
   }
 
   function renderChart() {
-    const series = chars.map((c) => {
+    const racers = chars.filter((c) => !c.alt);
+    const series = racers.map((c) => {
       const pts = (c.line || []).map(([lv, t]) => ({ x: (t * 1000 - LAUNCH) / 86400000, y: lv }));
       if (pts.length && c.updatedAt) pts.push({ x: (c.updatedAt * 1000 - LAUNCH) / 86400000, y: c.level });
       return { c, pts };
     }).filter((s) => s.pts.length > 1);
-    $("raceCard").hidden = !chars.length;
+    $("raceCard").hidden = !racers.length;
     const box = $("raceBox");
     const ok = series.length > 0 && typeof Chart !== "undefined";
     box.classList.toggle("none", !ok);
     box.dataset.msg = typeof Chart === "undefined" ? "Chart library failed to load." : "Appears after the first level-up is synced.";
     if (chart) { chart.destroy(); chart = null; }
-    $("legend").innerHTML = chars.map((c) => `<span><i style="background:${colorOf(c)}"></i>${esc(c.name)}</span>`).join("");
+    $("legend").innerHTML = racers.map((c) => `<span><i style="background:${colorOf(c)}"></i>${esc(c.name)}</span>`).join("");
     if (!ok) return;
 
     const ink = css("--text-2"), grid = css("--grid"), surf = css("--surface");

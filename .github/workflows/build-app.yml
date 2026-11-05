@@ -55,7 +55,7 @@ jobs:
           if ($out -notmatch "Addon: installed") { throw "addon wasn't installed" }
           if (-not (Test-Path (Join-Path $wow "_forever_\Interface\AddOns\NickHubTracker\NickHubTracker.toc"))) { throw "addon files missing" }
           if ($out -notmatch "Would upload: Forever-Ci Racer: lvl 3") { throw "saved file wasn't read" }
-          if ($out -match "Some Alt") { throw "character filter ignored" }
+          if ($out -notmatch "Forever-Some Alt") { throw "alts weren't included" }
 
           $again = & .\dist\NickHub.exe --check --wow-dir $wow --config $cfg | Out-String
           if ($again -notmatch "Addon: up to date") { throw "second run reinstalled the addon" }

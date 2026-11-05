@@ -195,16 +195,19 @@ def fingerprint(files):
     return h.hexdigest()
 
 
-def build_payload(files, character):
+def build_payload(files, main):
     """One upload covering every WoW account on this PC; the newest copy of a character wins."""
     chars, version = {}, None
     for p in files:
-        part = up.build_payload(p, character)
+        part = up.build_payload(p, main)
         version = part.get("version") or version
         for key, c in part["chars"].items():
             if key not in chars or (c.get("updatedAt") or 0) >= (chars[key].get("updatedAt") or 0):
                 chars[key] = c
-    return {"version": version, "uploadedAt": int(time.time()), "chars": chars}
+    payload = {"version": version, "uploadedAt": int(time.time()), "chars": chars}
+    if main:
+        payload["main"] = main  # the rest show up on the site as this racer's alts
+    return payload
 
 
 def report(status, text, payload):
@@ -219,7 +222,7 @@ def report(status, text, payload):
     saved = {k: c for k, c in payload["chars"].items() if k not in skipped}
     say(f"[{stamp}] uploaded: {up.summarize(dict(payload, chars=saved))}")
     if skipped:
-        say(f"           not uploaded (your password doesn't cover them): {', '.join(skipped)}")
+        say(f"           not uploaded (another racer's character, or older than what's saved): {', '.join(skipped)}")
     return True
 
 

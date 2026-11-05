@@ -21,6 +21,20 @@ These are open, or are limits of the WoW Forever client rather than bugs we can 
 
 ---
 
+## v3.3.0 (Nov 5): alts on the leaderboard
+
+**Asked for:** a new character (Eat Pizza) didn't appear on the site after `/nh sync`.
+
+**Cause:** by design until now. Each uploader sent only the racer's main, and a racer's password could only update that one character.
+
+**Change:**
+- **Uploads:** uploaders send every character on the PC and name the main.
+- **Ownership:** a racer's first upload of a character makes it theirs, and nobody else's password can update it after that.
+- **Leaderboard:** alts are tagged "alt of …" in their racer's colour. The winner banner and race chart count mains only.
+- **Update needed:** racers need v3.3.0 for their alts to show up. Their main keeps working on older versions.
+
+---
+
 ## v3.2.0 (Nov 5): no more error floods in dungeons
 
 **Issue:** during big pulls in Ragefire Chasm, the addon flooded the screen with errors. WoW then warned that it was "experiencing a high number of errors" and offered to disable it.
