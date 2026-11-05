@@ -59,7 +59,21 @@ config.json holds your personal password. Don't share it.
 If it ever leaks, tell Nick and he'll send you a new one.
 """
 
-TEST_BAT = '@echo off\r\ncd /d "%~dp0"\r\nNickHub.exe --test\r\n'
+# keeps its window open when NickHub.exe is missing or blocked, so the racer can read why
+TEST_BAT = "\r\n".join([
+    "@echo off",
+    'cd /d "%~dp0"',
+    "if not exist NickHub.exe (",
+    "  echo NickHub.exe isn't in this folder.",
+    "  echo Unzip the whole folder first: right-click the zip, then Extract All.",
+    "  echo If you did, Windows Security may have removed it. Check Protection history.",
+    "  pause",
+    "  exit /b 1",
+    ")",
+    "NickHub.exe --test",
+    "if errorlevel 1 pause",
+    "",
+])
 
 
 def wrangler(args, where):
