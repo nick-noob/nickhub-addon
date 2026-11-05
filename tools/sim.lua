@@ -71,7 +71,12 @@ COMBATLOG_XPGAIN_FIRSTPERSON = "%s dies, you gain %d experience."
 COMBATLOG_XPGAIN_FIRSTPERSON_UNNAMED = "You gain %d experience."
 DEFAULT_CHAT_FRAME = { AddMessage = function(_, t) if VERBOSE then print("[chat] " .. t) end end }
 local playedPrinted = 0
-function ChatFrame_DisplayTimePlayed() playedPrinted = playedPrinted + 1 end
+NUM_CHAT_WINDOWS = 1
+ChatFrame1 = { events = { TIME_PLAYED_MSG = true } }
+function ChatFrame1:RegisterEvent(e) self.events[e] = true end
+function ChatFrame1:UnregisterEvent(e) self.events[e] = nil end
+function ChatFrame1:IsEventRegistered(e) return self.events[e] == true end
+function ChatFrame_DisplayTimePlayed() if ChatFrame1.events.TIME_PLAYED_MSG then playedPrinted = playedPrinted + 1 end end
 StaticPopupDialogs = {}
 local popups = 0
 function StaticPopup_Show() popups = popups + 1 end
@@ -97,6 +102,7 @@ function CreateFrame()
 end
 local function fire(e, ...) if frame.events[e] then frame.fn(frame, e, ...) end end
 function RequestTimePlayed() C_Timer.After(0.2, function() fire("TIME_PLAYED_MSG", math.floor(playedTotal), 0); ChatFrame_DisplayTimePlayed() end) end
+function PLAYER_TYPES_PLAYED() RequestTimePlayed() end -- the player typing /played themselves
 
 -- ---------- load addon ----------
 local chunk = assert(loadfile(ADDON_PATH))
@@ -222,6 +228,7 @@ end
 advance(10)
 fire("PLAYER_LOGOUT")
 
+PLAYER_TYPES_PLAYED(); advance(1) -- a manual /played after the run should print
 RESULT = { db = NickHubTrackerDB, playedPrinted = playedPrinted, popups = popups, played = math.floor(playedTotal) }
 
 -- ---------- WoW-style serializer ----------

@@ -109,21 +109,24 @@ end
 ---------------------------------------------------------------------------
 -- /played without spamming chat
 ---------------------------------------------------------------------------
-local suppressPlayed = 0
-local origDisplay = ChatFrame_DisplayTimePlayed
-if origDisplay then
-  ChatFrame_DisplayTimePlayed = function(...)
-    if suppressPlayed > 0 then
-      suppressPlayed = suppressPlayed - 1
-      return
-    end
-    return origDisplay(...)
-  end
+-- chat windows stop listening while we ask, instead of replacing Blizzard's
+-- ChatFrame_DisplayTimePlayed, which taints the chat UI on newer clients
+local muted = {}
+local function unmuteChat()
+  for _, cf in ipairs(muted) do cf:RegisterEvent("TIME_PLAYED_MSG") end
+  muted = {}
 end
 
 local function requestPlayed()
-  suppressPlayed = suppressPlayed + 1
+  for i = 1, NUM_CHAT_WINDOWS or 10 do
+    local cf = _G["ChatFrame" .. i]
+    if cf and cf:IsEventRegistered("TIME_PLAYED_MSG") then
+      cf:UnregisterEvent("TIME_PLAYED_MSG")
+      table.insert(muted, cf)
+    end
+  end
   RequestTimePlayed()
+  C_Timer.After(5, unmuteChat) -- in case no answer comes
 end
 
 ---------------------------------------------------------------------------
@@ -385,6 +388,7 @@ end
 function handlers.PLAYER_LOGOUT() snapshot() end
 
 function handlers.TIME_PLAYED_MSG(total)
+  C_Timer.After(0, unmuteChat) -- after this message, so the chat windows don't print it
   playedBase, playedAt = total, GetTime()
   char.played = total
   -- backfill any level entry recorded before /played was known
@@ -410,10 +414,18 @@ function handlers.UPDATE_MOUSEOVER_UNIT() learnUnit("mouseover") end
 function handlers.NAME_PLATE_UNIT_ADDED(unit) learnUnit(unit) end
 function handlers.PLAYER_REGEN_ENABLED() if wantSync then C_Timer.After(1, function() trySync(false) end) end end
 function handlers.PLAYER_MONEY() if char then char.money = GetMoney() end end
+-- WoW names the function it blocked, so say which one instead of only showing its popup
+local function onBlocked(addon, fn)
+  if addon ~= ADDON then return end
+  msg(("WoW blocked a call to %s. Tell Nick."):format(tostring(fn)))
+  if NickHubTrackerDB then NickHubTrackerDB.blocked = { fn = tostring(fn), t = now() } end
+end
+handlers.ADDON_ACTION_FORBIDDEN = onBlocked
+handlers.ADDON_ACTION_BLOCKED = onBlocked
 
 f:SetScript("OnEvent", function(_, event, ...)
-  if event ~= "PLAYER_LOGIN" and not char then return end
   local h = handlers[event]
+  if event ~= "PLAYER_LOGIN" and not char and h ~= onBlocked then return end
   if h then h(...) end
 end)
 for event in pairs(handlers) do
