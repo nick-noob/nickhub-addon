@@ -4,6 +4,7 @@ A custom World of Warcraft addon that logs a WoW Forever 1–60 run, kill by kil
 
 - **See it live:** [nickhub.com](https://nickhub.com)
 - **Read how it works:** [nickhub.com/how-it-works](https://nickhub.com/how-it-works)
+- **See what's changed:** [patch-notes.md](patch-notes.md) covers every issue we've hit and how it was fixed
 
 WoW addons can't go online, so the addon saves to a file, a small uploader on the PC sends that file to a Cloudflare Worker, and the dashboard reads it from there.
 

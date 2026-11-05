@@ -22,6 +22,7 @@ WoW Forever launches **2026-11-04 at 3:00 PM PT** (23:00 UTC). The site shows a 
 | `.github/workflows/build-app.yml` | Builds `NickHub.exe` on Windows with PyInstaller, smoke-tests it against a fake WoW install, and attaches it to published releases |
 | `site/public/` | `index.html` (leaderboard home page with the launch countdown), `racer.html` (one racer's profile, served at `/<racer-name>`; `/racer?demo` shows `demo.json`), `how-it-works.html`, `how-the-race-works.html`, favicons |
 | `tools/` | Simulator: runs the real addon against a fake WoW API (`python tools/run_sim.py`, needs `pip install lupa`). It generated `site/public/demo.json` |
+| `patch-notes.md` | Every issue found and fixed, newest first, plus known limits. Add an entry for each fix or release |
 | `scripts/install-addon.ps1` | Windows script that links the addon into `World of Warcraft\<flavor>\Interface\AddOns` with a junction |
 
 ## Which machine does what
