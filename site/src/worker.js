@@ -9,8 +9,8 @@
 // Storage:
 //   D1 table chars (schema.sql): one row per character with its summary, race-chart line and
 //     gzipped full log. Unlike KV, a write shows up on the very next request
-//   KV racer:<sha256>   a racer's hashed password -> { character }, their main
-// A racer may upload their main and any alts. The first upload of a character makes that racer its
+//   KV racer:<sha256>   a racer's hashed password -> { character }, the one they registered with
+// A racer may upload any of their characters. The first upload of a character makes that racer its
 // owner, and after that nobody else's password can update it. The INGEST_TOKEN secret is the
 // admin password and may update any character.
 
@@ -47,7 +47,7 @@ async function authorize(request, env) {
   return racer && racer.character ? { admin: false, character: racer.character } : null;
 }
 
-// keys are "<realm>-<name>", so a racer's main is the key ending in their registered name
+// keys are "<realm>-<name>", so a racer's registered character is the key ending in its name
 function isMain(key, main) {
   return !!main && key.toLowerCase().endsWith("-" + main.toLowerCase());
 }
@@ -56,7 +56,7 @@ function isMain(key, main) {
 function summarize(c) {
   return {
     name: c.name, realm: c.realm, class: c.class, race: c.race, faction: c.faction,
-    level: c.level, xp: c.xp, xpMax: c.xpMax, played: c.played, updatedAt: c.updatedAt,
+    level: c.level, xp: c.xp, xpMax: c.xpMax, played: c.played, updatedAt: c.updatedAt, startedAt: c.startedAt,
     zone: c.zone, kills: (c.kills || []).length, quests: (c.quests || []).length,
     deaths: (c.deaths || []).length,
     reached60: c.levels?.["60"]?.t ?? null,
@@ -90,7 +90,7 @@ async function ingest(request, env) {
   try { body = await request.json(); } catch { return json({ error: "invalid JSON" }, 400); }
   if (!body || typeof body.chars !== "object") return json({ error: "missing chars" }, 400);
 
-  // the racer's main: their registered character, or for the admin whatever their uploader names
+  // the racer's registered character, or for the admin whatever their uploader names
   const main = who.admin ? (typeof body.main === "string" ? body.main : "") : who.character;
   const owner = (main || "admin").toLowerCase();
 
@@ -108,8 +108,7 @@ async function ingest(request, env) {
     if (!c || typeof c !== "object") { skipped.push(key); continue; }
     const primary = isMain(key, main);
     if (primary && !who.admin) c.name = who.character;
-    const sum = { ...summarize(c), alt: !!main && !primary, main: main || null };
-    const res = await upsert.bind(key, JSON.stringify(sum), JSON.stringify(timeline(c)),
+    const res = await upsert.bind(key, JSON.stringify(summarize(c)), JSON.stringify(timeline(c)),
       await gzip(JSON.stringify(c)), c.updatedAt || 0, owner, who.admin ? 1 : 0, primary ? 1 : 0).run();
     if (!res.meta.changes) { skipped.push(key); continue; }
     saved[key] = { level: c.level, kills: (c.kills || []).length, quests: (c.quests || []).length };

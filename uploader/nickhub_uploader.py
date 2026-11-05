@@ -209,8 +209,8 @@ def load_config():
 
 
 def build_payload(path, main=None):
-    """Every character in the file. `main` (config.json's "character") tells the site which one is
-    racing; the rest show up as its alts."""
+    """Every character in the file. `main` is config.json's "character", the one the racer's
+    password was registered for."""
     data = parse_saved_variables(path).get("NickHubTrackerDB") or {}
     chars = data.get("chars") or {}
     # an alt without a guid hasn't logged in since v3.1.0, so it may be an old first-name entry

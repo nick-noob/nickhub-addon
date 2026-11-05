@@ -206,7 +206,7 @@ def build_payload(files, main):
                 chars[key] = c
     payload = {"version": version, "uploadedAt": int(time.time()), "chars": chars}
     if main:
-        payload["main"] = main  # the rest show up on the site as this racer's alts
+        payload["main"] = main  # the character this racer's password was registered for
     return payload
 
 

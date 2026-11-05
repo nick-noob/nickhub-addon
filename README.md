@@ -102,13 +102,13 @@ Needs Python 3 (no extra packages).
 
 Each `/nh sync` or logout → the uploader notices within a few seconds → nickhub.com updates. `python uploader\nickhub_uploader.py --dump` prints what it would upload, handy for debugging.
 
-`"character": "Shrim Pina"` in config.json names your main. Every other character in the saved file uploads too, and appears on the leaderboard as its alt.
+Every character in the saved file uploads, and each gets its own spot on the leaderboard. `"character": "Shrim Pina"` in config.json names the character your password was registered for.
 
 Before launch, double-click `uploader\test_setup.bat`. It runs the racers' setup test from source: it checks your password with an empty upload, finds WoW Forever and shows the saved data it would send. Run `install-addon.ps1 -Flavor _forever_` first, so the test sees your junction and leaves it alone instead of copying the addon in.
 
 ## Adding racers (friends)
 
-Each friend gets their own upload password, tied to their main. Their uploader sends the main and any alts on their PC, and a character belongs to whoever uploads it first, so nobody can overwrite another racer's characters. Alts appear on the leaderboard tagged with their racer, and only mains can win. Run this on the Mac, where Wrangler is logged in:
+Each friend gets their own upload password, tied to their main. Their uploader sends the main and any alts on their PC, and a character belongs to whoever uploads it first, so nobody can overwrite another racer's characters. Every character races on the same leaderboard, and the first to 60 wins. Run this on the Mac, where Wrangler is logged in:
 
 ```bash
 gh release download --pattern NickHub.exe --dir release --clobber   # latest app build

@@ -21,17 +21,17 @@ These are open, or are limits of the WoW Forever client rather than bugs we can 
 
 ---
 
-## v3.3.0 (Nov 5): alts on the leaderboard
+## v3.3.0 (Nov 5): every character on the leaderboard
 
 **Asked for:** a new character (Eat Pizza) didn't appear on the site after `/nh sync`.
 
-**Cause:** by design until now. Each uploader sent only the racer's main, and a racer's password could only update that one character.
+**Cause:** by design until now. Each uploader sent only one character per racer, and a racer's password could only update that one.
 
 **Change:**
-- **Uploads:** uploaders send every character on the PC and name the main.
+- **Uploads:** every character on the PC uploads, and each races on the same board. The first character to 60 wins.
 - **Ownership:** a racer's first upload of a character makes it theirs, and nobody else's password can update it after that.
-- **Leaderboard:** alts are tagged "alt of …" in their racer's colour. The winner banner and race chart count mains only.
-- **Update needed:** racers need v3.3.0 for their alts to show up. Their main keeps working on older versions.
+- **Colours:** the board has 8 colours, up from 4. They go out in the order characters started, so a new character never changes anyone else's.
+- **Update needed:** racers need v3.3.0 for their other characters to show up. Older versions keep uploading the character they registered with.
 
 ---
 
