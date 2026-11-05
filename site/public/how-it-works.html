@@ -181,7 +181,7 @@ if (url.pathname === "/api/summary") return summary(env);</code></pre>
     <p class="cap">The start of the Worker's routing: an upload, or the leaderboard's summary. Racer profiles, full logs and the site's own files follow the same pattern.</p>
     <ul>
       <li><strong>Uploads</strong> need a password. Each racer has their own, tied to their character, and Cloudflare stores only a scrambled hash of it, so a racer's uploader can't touch anyone else's run.</li>
-      <li><strong>Storage</strong> is Cloudflare KV, a simple key-value database. Each character gets its own key, plus a short summary the leaderboard reads without loading everyone's full history.</li>
+      <li><strong>Storage</strong> is Cloudflare D1, a small SQL database. Each character gets its own row, holding a short summary the leaderboard reads without loading everyone's full history, plus the full log, compressed. A sync shows up on the very next page load.</li>
       <li><strong>Newest wins.</strong> An older copy of a character never overwrites a newer one, so syncing from two PCs is safe.</li>
     </ul>
 
@@ -214,7 +214,7 @@ if (url.pathname === "/api/summary") return summary(env);</code></pre>
       <tr><th>Part</th><th>Built with</th></tr>
       <tr><td>Addon</td><td>Lua, WoW's addon API</td></tr>
       <tr><td>Uploader</td><td>Python standard library</td></tr>
-      <tr><td>Backend</td><td>Cloudflare Workers and KV</td></tr>
+      <tr><td>Backend</td><td>Cloudflare Workers, D1 and KV (for racer passwords)</td></tr>
       <tr><td>Dashboard</td><td>Plain HTML, CSS and JavaScript, Chart.js</td></tr>
     </table>
     <p>All of it is open to read: <a href="https://github.com/nick-noob/nickhub-addon">view the code on GitHub</a>.</p>

@@ -17,3 +17,10 @@ run_worker_first = ["/api/*"]
 [[kv_namespaces]]
 binding = "NICKHUB"
 id = "c7fb2934feaf4d398ef9c21b72036633"
+
+# Characters live in D1, which shows a new upload to the very next request (KV takes up to a minute).
+# Created with: npx wrangler d1 create nickhub, then: npx wrangler d1 execute nickhub --remote --file schema.sql
+[[d1_databases]]
+binding = "DB"
+database_name = "nickhub"
+database_id = "683b1a97-6f10-4cc7-9694-c0380916e049"

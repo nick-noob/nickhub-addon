@@ -7,7 +7,7 @@ Context for Claude Code sessions on this repo. Nick works with Claude on two mac
 NickHub tracks Nick's WoW Forever 1–60 run (character **Shrim Pina**, Orc Hunter, realm Forever) and shows it at https://nickhub.com.
 
 ```
-addon (Lua, in game) → SavedVariables file → uploader (Python, on the PC) → Cloudflare Worker + KV → dashboard (browser)
+addon (Lua, in game) → SavedVariables file → uploader (Python, on the PC) → Cloudflare Worker + D1 → dashboard (browser)
 ```
 
 WoW Forever launches **2026-11-04 at 3:00 PM PT** (23:00 UTC). The site shows a countdown banner until then.
@@ -32,7 +32,7 @@ WoW Forever launches **2026-11-04 at 3:00 PM PT** (23:00 UTC). The site shows a 
 
 **Mac: development and deploys.** It has Node, Wrangler (logged into Cloudflare) and the `gh` CLI.
 - **The site is only deployed from the Mac**, with `npx wrangler deploy` in `site/`. Pushing to GitHub doesn't deploy it.
-- **Cloudflare data changes** (KV reads and deletes, secrets) also happen on the Mac.
+- **Cloudflare data changes** (D1 and KV reads and deletes, secrets) also happen on the Mac.
 
 From Windows, commit and push site changes, then ask Nick to deploy them from the Mac.
 
@@ -53,10 +53,10 @@ From Windows, commit and push site changes, then ask Nick to deploy them from th
   - `INGEST_TOKEN` is set in Cloudflare, and the upload endpoint answers 401 without it.
 - **Windows pipeline verified:** a TBC Anniversary test upload worked on 2026-11-03, and its test character was deleted from KV afterwards. Nick's `config.json` now points at `_forever_` with `"character": "Shrim Pina"`.
 - **Race backend live (2026-11-03):**
-  - **Storage:** each character is its own KV key, `char:<realm-name>`, with a small summary in the key's metadata. The old single `data` key is gone.
+  - **Storage (moved to D1 on 2026-11-05):** each character is a row in D1's `chars` table (`site/schema.sql`), keyed `<realm-name>`. A row holds the summary JSON, the race-chart line and the gzipped full log. A level-60 log is about 80 KB gzipped, and D1 caps rows at 2 MB. An upsert keeps the newer `updatedAt`. Reads aren't cached, and the leaderboard refreshes every 20 seconds. The old `char:` and `line:` KV keys are unused. Cloudflare is on the Workers Paid plan ($5/month) since 2026-11-05.
   - **Passwords:** racers live under `racer:<sha256 of password>` → `{ character }`. A racer password may only update keys ending in `-<character>`, while `INGEST_TOKEN` (Nick's) is the admin password and may update any key.
   - **No friends registered yet.**
-- **To remove a stray character** (such as a test upload), delete its `char:<key>` from KV. `/nh reset` only clears the PC.
+- **To remove a stray character** (such as a test upload), run `npx wrangler d1 execute nickhub --remote --command "DELETE FROM chars WHERE key = '<realm-name>'"` in `site/`. `/nh reset` only clears the PC.
 - **Release:** `release/NickHubTracker.zip` and `release/release-notes.md` (both gitignored) are ready for GitHub release `v1.0.0`, which Nick publishes himself. Publishing it makes the workflow attach `NickHub.exe`.
 - **Racers' setup:** each racer gets a personal zip from `racers.py` containing the app, their config and a "Start here" note. The app installs the addon, so racers don't need the addon zip.
 
@@ -96,8 +96,8 @@ If the addon shows as **out of date**, tick "Load out of date AddOns". **Incompa
 - **Racers:** Nick plus 3 friends, all on Windows.
 - **Winner:** the first to reach 60 on the calendar. Rank by level, then XP. The winner comes from the level-60 timestamp, which uses the game server's clock.
 
-Built (2026-11-03): per-racer passwords (`scripts/racers.py`), per-character storage, `/api/summary` (cached about 30 seconds, because KV list operations are limited on the free plan) and `/api/char/<key>`.
-- **Leaderboard:** `index.html` ranks finished racers by who hit 60 first, then everyone else by level, then XP. It shows a race chart from each racer's `line:` timeline and group records, and refreshes every minute.
+Built (2026-11-03): per-racer passwords (`scripts/racers.py`), per-character storage, `/api/summary` and `/api/char/<key>`, both read from D1 without caching.
+- **Leaderboard:** `index.html` ranks finished racers by who hit 60 first, then everyone else by level, then XP. It shows a race chart from each racer's level timeline and group records, and refreshes every 20 seconds.
 - **Profiles:** each racer's page is `racer.html`, served at `/<name-slug>`. The Worker sends any single path segment that isn't a file to that page.
 - **Colours:** each racer's colour comes from their key's alphabetical position (`--r1`…`--r4`, a validated palette), so it doesn't change as the standings do.
 

@@ -373,7 +373,7 @@ footer a { color: inherit; }
   startCountdown();
   refresh();
   // keep a tab left open on race night current
-  setInterval(() => { if (!document.hidden) refresh(); }, 60000);
+  setInterval(() => { if (!document.hidden) refresh(); }, 20000);
   matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", renderChart);
   new MutationObserver(renderChart).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 })();

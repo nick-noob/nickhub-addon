@@ -6,10 +6,10 @@
 //   GET  /api/data        — every character in full
 //   GET  /<racer-name>    — a racer's profile page (racer.html), e.g. /shrim-pina
 //
-// KV layout:
-//   char:<realm-name>   one character's log; its metadata holds the summary, so listing is cheap
-//   line:<realm-name>   [[level, unix time], ...] for the leaderboard's race chart
-//   racer:<sha256>      a racer's hashed password -> { character } it may update
+// Storage:
+//   D1 table chars (schema.sql): one row per character with its summary, race-chart line and
+//     gzipped full log. Unlike KV, a write shows up on the very next request
+//   KV racer:<sha256>   a racer's hashed password -> { character } it may update
 // The INGEST_TOKEN secret is the admin password and may update any character.
 
 const MAX_BYTES = 20 * 1024 * 1024;
@@ -53,17 +53,24 @@ function mayUpdate(who, key) {
   return [full, full.split(/\s+/)[0]].some((n) => key.toLowerCase().endsWith("-" + n));
 }
 
-// small enough to fit KV metadata (1 KB), so /api/summary never reads full logs
+// the leaderboard's view of a character, so /api/summary never reads full logs
 function summarize(c) {
-  const meta = {
+  return {
     name: c.name, realm: c.realm, class: c.class, race: c.race, faction: c.faction,
     level: c.level, xp: c.xp, xpMax: c.xpMax, played: c.played, updatedAt: c.updatedAt,
     zone: c.zone, kills: (c.kills || []).length, quests: (c.quests || []).length,
     deaths: (c.deaths || []).length,
     reached60: c.levels?.["60"]?.t ?? null,
   };
-  if (JSON.stringify(meta).length > 900) delete meta.zone;
-  return meta;
+}
+
+// a level-60 log can pass 1 MB of JSON, so it's stored gzipped (D1 rows are capped at 2 MB)
+async function gzip(text) {
+  return new Response(new Blob([text]).stream().pipeThrough(new CompressionStream("gzip"))).arrayBuffer();
+}
+
+async function gunzip(bytes) {
+  return new Response(new Blob([new Uint8Array(bytes)]).stream().pipeThrough(new DecompressionStream("gzip"))).text();
 }
 
 function timeline(c) {
@@ -84,60 +91,45 @@ async function ingest(request, env) {
   try { body = await request.json(); } catch { return json({ error: "invalid JSON" }, 400); }
   if (!body || typeof body.chars !== "object") return json({ error: "missing chars" }, 400);
 
-  // each character is its own key, so two uploaders can't overwrite each other
+  // each character is its own row, so two uploaders can't overwrite each other.
+  // The upsert's WHERE skips a snapshot older than the saved one in the same step
+  const upsert = env.DB.prepare(
+    `INSERT INTO chars (key, summary, line, log, updated_at) VALUES (?1, ?2, ?3, ?4, ?5)
+     ON CONFLICT(key) DO UPDATE SET summary = excluded.summary, line = excluded.line,
+       log = excluded.log, updated_at = excluded.updated_at
+     WHERE excluded.updated_at >= chars.updated_at`);
   const saved = {}, skipped = [];
   for (const [key, c] of Object.entries(body.chars)) {
     if (!c || typeof c !== "object" || !mayUpdate(who, key)) { skipped.push(key); continue; }
-    const { metadata: prev } = await env.NICKHUB.getWithMetadata("char:" + key);
-    if (prev && (c.updatedAt || 0) < (prev.updatedAt || 0)) { skipped.push(key); continue; }
     if (!who.admin) c.name = who.character;  // the full name they registered, not just the first name
-    await env.NICKHUB.put("char:" + key, JSON.stringify(c), { metadata: summarize(c) });
-    await env.NICKHUB.put("line:" + key, JSON.stringify(timeline(c)));
+    const res = await upsert.bind(key, JSON.stringify(summarize(c)), JSON.stringify(timeline(c)),
+      await gzip(JSON.stringify(c)), c.updatedAt || 0).run();
+    if (!res.meta.changes) { skipped.push(key); continue; }
     saved[key] = { level: c.level, kills: (c.kills || []).length, quests: (c.quests || []).length };
   }
-  if (Object.keys(saved).length) await caches.default.delete(SUMMARY_CACHE);
   return json({ ok: true, chars: saved, skipped });
 }
 
-async function charKeys(env) {
-  const keys = [];
-  let cursor;
-  do {
-    const page = await env.NICKHUB.list({ prefix: "char:", cursor });
-    keys.push(...page.keys);
-    cursor = page.list_complete ? null : page.cursor;
-  } while (cursor);
-  return keys;
-}
-
-// KV allows few list operations a day on the free plan, so the leaderboard's summary is cached briefly
-const SUMMARY_CACHE = "https://nickhub.com/__cache/summary";
+const FRESH = { "cache-control": "no-store" };
 
 async function summary(env) {
-  const hit = await caches.default.match(SUMMARY_CACHE);
-  if (hit) return hit;
-  const keys = await charKeys(env);
-  const lines = await Promise.all(keys.map((k) => env.NICKHUB.get("line:" + k.name.slice(5), "json")));
-  const res = json({ chars: keys.map((k, i) => ({ key: k.name.slice(5), ...k.metadata, line: lines[i] || [] })) }, 200, { "cache-control": "public, max-age=30" });
-  await caches.default.put(SUMMARY_CACHE, res.clone());
-  return res;
+  const { results } = await env.DB.prepare("SELECT key, summary, line FROM chars").all();
+  return json({ chars: results.map((r) => ({ key: r.key, ...JSON.parse(r.summary), line: JSON.parse(r.line) })) }, 200, FRESH);
 }
 
 async function charData(key, env) {
-  const raw = key && (await env.NICKHUB.get("char:" + key));
-  if (!raw) return json({ error: "not found" }, 404);
-  return new Response(raw, {
-    headers: { "content-type": "application/json; charset=utf-8", "cache-control": "public, max-age=15" },
+  const row = key && (await env.DB.prepare("SELECT log FROM chars WHERE key = ?1").bind(key).first());
+  if (!row) return json({ error: "not found" }, 404);
+  return new Response(await gunzip(row.log), {
+    headers: { "content-type": "application/json; charset=utf-8", ...FRESH },
   });
 }
 
 async function data(env) {
-  const keys = await charKeys(env);
-  if (!keys.length) return json({ chars: {} }, 200, { "cache-control": "no-store" });
-  const logs = await Promise.all(keys.map((k) => env.NICKHUB.get(k.name, "json")));
+  const { results } = await env.DB.prepare("SELECT key, log FROM chars").all();
   const chars = {};
-  keys.forEach((k, i) => { if (logs[i]) chars[k.name.slice(5)] = logs[i]; });
-  return json({ chars }, 200, { "cache-control": "public, max-age=15" });
+  for (const r of results) chars[r.key] = JSON.parse(await gunzip(r.log));
+  return json({ chars }, 200, FRESH);
 }
 
 export default {

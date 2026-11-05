@@ -25,7 +25,7 @@ WoW addon ──(/nh sync writes SavedVariables)──> uploader on your PC ─�
 
 # Setup
 
-These are the steps for running this tracker, written for nickhub.com. On your own copy, use your own domain in place of `nickhub.com`, including in `site/wrangler.toml`, and your own KV namespace `id`. The `id` in this repo belongs to the live site and won't work on another Cloudflare account.
+These are the steps for running this tracker, written for nickhub.com. On your own copy, use your own domain in place of `nickhub.com`, including in `site/wrangler.toml`, and your own KV namespace `id` and D1 `database_id`. The ids in this repo belong to the live site and won't work on another Cloudflare account.
 
 ## 1. Put nickhub.com on Cloudflare (one time, ~10 min)
 
@@ -41,9 +41,16 @@ cd site
 npm install
 npx wrangler login
 npx wrangler kv namespace create NICKHUB
+npx wrangler d1 create nickhub
 ```
 
-Copy the `id` it prints into `wrangler.toml`, replacing the existing `id` under `[[kv_namespaces]]`. Then make an upload password and store it as a secret:
+Copy the `id` the first command prints into `wrangler.toml`, replacing the existing `id` under `[[kv_namespaces]]`, and the `database_id` the second prints under `[[d1_databases]]`. KV holds the racers' hashed passwords and D1 holds the characters. Create D1's table:
+
+```bash
+npx wrangler d1 execute nickhub --remote --file schema.sql
+```
+
+Then make an upload password and store it as a secret:
 
 ```bash
 python3 -c "import secrets; print(secrets.token_urlsafe(32))"
