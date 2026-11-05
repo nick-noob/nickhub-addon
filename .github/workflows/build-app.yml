@@ -25,6 +25,13 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Check the release matches the addon's version
+        if: github.event_name == 'release'
+        shell: pwsh
+        run: |
+          $v = (Select-String -Path addon/NickHubTracker/NickHubTracker.toc -Pattern '^## Version:\s*(.+)$').Matches[0].Groups[1].Value.Trim()
+          if ("${{ github.event.release.tag_name }}" -ne "v$v") { throw "release ${{ github.event.release.tag_name }} doesn't match the .toc's Version $v. Bump the .toc, or name the release v$v" }
+
       - name: Install PyInstaller
         run: python -m pip install pyinstaller==6.11.1
 
@@ -53,6 +60,7 @@ jobs:
           $out = & .\dist\NickHub.exe --check --wow-dir $wow --config $cfg | Out-String
           Write-Host $out
           if ($LASTEXITCODE -ne 0) { throw "NickHub.exe exited with $LASTEXITCODE" }
+          if ($out -notmatch "NickHub v\d+\.\d+\.\d+") { throw "the app didn't show its version" }
           if ($out -notmatch "Addon: installed") { throw "addon wasn't installed" }
           if (-not (Test-Path (Join-Path $wow "_forever_\Interface\AddOns\NickHubTracker\NickHubTracker.toc"))) { throw "addon files missing" }
           if ($out -notmatch "Would upload: Forever-Ci Racer: lvl 3") { throw "saved file wasn't read" }

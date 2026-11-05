@@ -21,6 +21,19 @@ These are open, or are limits of the WoW Forever client rather than bugs we can 
 
 ---
 
+## v3.4.0 (Nov 5): every release shows its version
+
+**Asked for:** an easy way to tell which version each racer has.
+
+**Change:**
+- **One number:** the addon's `.toc` holds the version.
+- **Where it shows:** the addon prints it at login and in `/nh`. NickHub.exe and its setup test print it too.
+- **Zips:** each racer's zip is named with it, such as `NickHub-snort-wasabi-v3.4.0.zip`, and the "Start here" note says it.
+- **On the site:** each sync sends the version, so the site's data shows who runs what.
+- **Packaging:** `racers.py package` downloads the matching NickHub.exe itself. With no name, it rebuilds every racer's zip.
+
+---
+
 ## v3.3.0 (Nov 5): every character on the leaderboard
 
 **Asked for:** a new character (Eat Pizza) didn't appear on the site after `/nh sync`.

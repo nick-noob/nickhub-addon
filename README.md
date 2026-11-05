@@ -111,14 +111,14 @@ Before launch, double-click `uploader\test_setup.bat`. It runs the racers' setup
 Each friend gets their own upload password, tied to their main. Their uploader sends the main and any alts on their PC, and a character belongs to whoever uploads it first, so nobody can overwrite another racer's characters. Every character races on the same leaderboard, and the first to 60 wins. Run this on the Mac, where Wrangler is logged in:
 
 ```bash
-gh release download --pattern NickHub.exe --dir release --clobber   # latest app build
 python3 scripts/racers.py add "Character Name"      # registers them and builds their zip
-python3 scripts/racers.py package "Character Name"  # rebuild their zip, e.g. after a new app build
+python3 scripts/racers.py package                   # rebuild every racer's zip for the current release
+python3 scripts/racers.py package "Character Name"  # rebuild one racer's zip
 python3 scripts/racers.py list                      # who's registered
 python3 scripts/racers.py revoke "Character Name"   # their password stops working; their stats stay
 ```
 
-`add` writes `racers/<name>/config.json` and, when `release/NickHub.exe` is there, `racers/<name>/NickHub-<name>.zip`. That zip holds the app, their config and a "Start here" note. Send it to the friend privately (a Discord DM or Google Drive share works; Gmail blocks `.exe` files). It contains their password, and the `racers/` and `release/` folders are gitignored so neither can be committed. To replace a lost password, revoke it and add the friend again. Your own `INGEST_TOKEN` stays the admin password and can update any character.
+`add` writes `racers/<name>/config.json` and builds `racers/<name>/NickHub-<name>-v<version>.zip`. The version comes from the `## Version:` line in `addon/NickHubTracker/NickHubTracker.toc`. `package` checks that `release/NickHub.exe` is that release's build and downloads it if not, so publish the release before packaging. That zip holds the app, their config and a "Start here" note. Send it to the friend privately (a Discord DM or Google Drive share works; Gmail blocks `.exe` files). It contains their password, and the `racers/` and `release/` folders are gitignored so neither can be committed. To replace a lost password, revoke it and add the friend again. Your own `INGEST_TOKEN` stays the admin password and can update any character.
 
 ### The racer app (NickHub.exe)
 

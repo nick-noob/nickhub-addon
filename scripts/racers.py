@@ -4,11 +4,13 @@ Manage race passwords for nickhub.com. Run on the Mac, where Wrangler is logged 
 
     python3 scripts/racers.py add "Character Name"      # new password + racers/<name>/config.json
     python3 scripts/racers.py package "Character Name"  # zip NickHub.exe + their config to send them
+    python3 scripts/racers.py package                   # rebuild every racer's zip
     python3 scripts/racers.py list                      # who's registered
     python3 scripts/racers.py revoke "Character Name"   # the old password stops working
 
-`package` (also run by `add`) needs release/NickHub.exe. Get the latest build with:
-    gh release download --pattern NickHub.exe --dir release --clobber
+`package` (also run by `add`) builds zips for the release named by the addon's .toc Version line,
+e.g. NickHub-shrim-pina-v3.3.0.zip. It checks release/NickHub.exe against that GitHub release
+and downloads the right build if it's missing or different, so publish the release first.
 
 Each password is stored in Cloudflare KV only as a SHA-256 hash, tied to the racer's main. Their
 uploader sends the main and any alts, and a character belongs to whoever uploaded it first, so
@@ -33,9 +35,10 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SITE = os.path.join(ROOT, "site")
 RACERS = os.path.join(ROOT, "racers")
 EXE = os.path.join(ROOT, "release", "NickHub.exe")
+TOC = os.path.join(ROOT, "addon", "NickHubTracker", "NickHubTracker.toc")
 PREFIX = "racer:"
 
-START_HERE = """NickHub: racing as {name}
+START_HERE = """NickHub v{version}: racing as {name}
 
 1. Unzip this whole folder somewhere you'll keep it, like Documents\\NickHub.
    Before launch, double-click "Test my setup.bat". It checks your password and
@@ -114,29 +117,87 @@ def add(name, where):
         json.dump(cfg, fh, indent=2)
         fh.write("\n")
     print(f"Registered {name}. Their config is at {os.path.relpath(path, ROOT)}")
-    if os.path.exists(EXE):
+    try:
         package(name)
-    else:
-        print("Download NickHub.exe into release/, then run `package` to build their zip.")
+    except SystemExit as e:
+        print(f"Their zip isn't built yet: {e}\nThen run: python3 scripts/racers.py package \"{name}\"")
+        return
+    send_note()
 
 
-def package(name):
+def release_version():
+    """The release being packaged: the addon's .toc Version line, which NickHub.exe also reports."""
+    with open(TOC, encoding="utf-8") as fh:
+        for line in fh:
+            if line.startswith("## Version:"):
+                return line.split(":", 1)[1].strip()
+    sys.exit(f"No '## Version:' line in {os.path.relpath(TOC, ROOT)}")
+
+
+def file_sha256(path):
+    with open(path, "rb") as fh:
+        return hashlib.sha256(fh.read()).hexdigest()
+
+
+def ensure_exe(version):
+    """Make release/NickHub.exe the build attached to GitHub release v<version>."""
+    tag = "v" + version
+    res = subprocess.run(["gh", "release", "view", tag, "--json", "assets"], capture_output=True, text=True, stdin=subprocess.DEVNULL)
+    if res.returncode != 0:
+        sys.exit(f"GitHub has no release {tag} yet. Publish it first:\n"
+                 f'  gh release create {tag} release/NickHubTracker.zip --title "NickHub Tracker {tag}" --notes-file release/release-notes.md')
+    exe = next((a for a in json.loads(res.stdout)["assets"] if a["name"] == "NickHub.exe"), None)
+    if not exe:
+        sys.exit(f"Release {tag} doesn't have NickHub.exe yet. The build takes about 5 minutes, so try again then.")
+    want = (exe.get("digest") or "").removeprefix("sha256:")
+    if want and os.path.exists(EXE) and file_sha256(EXE) == want:
+        return
+    print(f"Downloading NickHub.exe from {tag}...")
+    subprocess.run(["gh", "release", "download", tag, "--pattern", "NickHub.exe", "--dir", os.path.dirname(EXE), "--clobber"],
+                   check=True, stdin=subprocess.DEVNULL)
+    if want and file_sha256(EXE) != want:
+        sys.exit(f"The downloaded NickHub.exe doesn't match release {tag}. Try again.")
+
+
+def package(name, version=None):
     folder = os.path.join(RACERS, slug(name))
     cfg = os.path.join(folder, "config.json")
     if not os.path.exists(cfg):
         sys.exit(f"No config for {name} at {os.path.relpath(cfg, ROOT)}. Run `add` first.")
-    if not os.path.exists(EXE):
-        sys.exit("release/NickHub.exe is missing. Get it with: gh release download --pattern NickHub.exe --dir release --clobber")
-    out = os.path.join(folder, f"NickHub-{slug(name)}.zip")
+    if version is None:
+        version = release_version()
+        ensure_exe(version)
+    for old in os.listdir(folder):  # an older version's zip would only cause mix-ups
+        if old.startswith("NickHub-") and old.endswith(".zip"):
+            os.remove(os.path.join(folder, old))
+    out = os.path.join(folder, f"NickHub-{slug(name)}-v{version}.zip")
     with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
         z.write(EXE, "NickHub/NickHub.exe")
         z.write(cfg, "NickHub/config.json")
-        z.writestr("NickHub/Start here.txt", START_HERE.format(name=name).replace("\n", "\r\n"))
+        z.writestr("NickHub/Start here.txt", START_HERE.format(name=name, version=version).replace("\n", "\r\n"))
         z.writestr("NickHub/Test my setup.bat", TEST_BAT)
     os.chmod(out, 0o600)
     print(f"Packaged {os.path.relpath(out, ROOT)}")
-    print("Send it privately (Discord DM or a Google Drive share; Gmail blocks .exe files).")
-    print("It contains their password, so don't post it in a group chat or commit it.")
+
+
+def package_all():
+    version = release_version()
+    ensure_exe(version)
+    names = []
+    for d in sorted(os.listdir(RACERS)) if os.path.isdir(RACERS) else []:
+        cfg = os.path.join(RACERS, d, "config.json")
+        if os.path.exists(cfg):
+            with open(cfg, encoding="utf-8") as fh:
+                names.append(json.load(fh).get("character") or d)
+    if not names:
+        sys.exit("No racers in racers/. Run `add` first.")
+    for name in names:
+        package(name, version)
+
+
+def send_note():
+    print("Send each zip privately (Discord DM or a Google Drive share; Gmail blocks .exe files).")
+    print("Each contains that racer's password, so don't post it in a group chat or commit it.")
 
 
 def show(where):
@@ -164,9 +225,10 @@ def main():
     args = ap.parse_args()
     where = "--local" if args.local else "--remote"
     name = (args.character or "").strip()
-    if args.command != "list" and not name:
+    if args.command not in ("list", "package") and not name:
         ap.error(f"{args.command} needs a character name")
-    {"add": lambda: add(name, where), "package": lambda: package(name), "list": lambda: show(where),
+    {"add": lambda: add(name, where), "package": lambda: (package(name) if name else package_all(), send_note()),
+     "list": lambda: show(where),
      "revoke": lambda: revoke(name, where)}[args.command]()
 
 

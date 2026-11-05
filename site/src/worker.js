@@ -60,6 +60,7 @@ function summarize(c) {
     zone: c.zone, kills: (c.kills || []).length, quests: (c.quests || []).length,
     deaths: (c.deaths || []).length,
     reached60: c.levels?.["60"]?.t ?? null,
+    addon: c.addonVersion ?? null,  // which release this racer runs, for troubleshooting
   };
 }
 

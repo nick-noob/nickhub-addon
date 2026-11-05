@@ -61,6 +61,11 @@ From Windows, commit and push site changes, then ask Nick to deploy them from th
 - **To remove a stray character** (such as a test upload), run `npx wrangler d1 execute nickhub --remote --command "DELETE FROM chars WHERE key = '<realm-name>'"` in `site/`. `/nh reset` only clears the PC.
 - **Release:** `release/NickHubTracker.zip` and `release/release-notes.md` (both gitignored) are ready for GitHub release `v1.0.0`, which Nick publishes himself. Publishing it makes the workflow attach `NickHub.exe`.
 - **Racers' setup:** each racer gets a personal zip from `racers.py` containing the app, their config and a "Start here" note. The app installs the addon, so racers don't need the addon zip.
+- **Versions:** the `## Version:` line in the `.toc` is the release number. The addon shows it at login and in `/nh` and uploads it as `addonVersion`, the summary carries it as `addon`, NickHub.exe prints it, and racer zips are named with it. The build fails a release whose tag isn't `v<that version>`.
+- **Release steps:**
+  1. Bump the `.toc` Version and rebuild `release/NickHubTracker.zip`.
+  2. Run `gh release create v<version> release/NickHubTracker.zip --title "NickHub Tracker v<version>" --notes-file release/release-notes.md`.
+  3. About 5 minutes later, run `python3 scripts/racers.py package`. It fetches the matching exe.
 
 ### Windows setup steps (summary)
 1. **Install the tools:** GitHub Desktop, and Python from python.org with "Add python.exe to PATH" ticked.

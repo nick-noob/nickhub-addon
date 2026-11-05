@@ -2,7 +2,7 @@
 ## Title: NickHub Tracker
 ## Notes: Logs leveling progress (levels, kills, quests, deaths, zones) for nickhub.com
 ## Author: Nick
-## Version: 1.0.0
+## Version: 3.4.0
 ## SavedVariables: NickHubTrackerDB
 
 NickHubTracker.lua

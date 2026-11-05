@@ -3,7 +3,10 @@
 -- SavedVariables are only written to disk on /reload, logout, or exit. Use /nh sync.
 
 local ADDON = ...
-local VERSION = 1
+local VERSION = 1 -- the saved data's format
+-- the release, from the .toc's Version line; racers' zips and NickHub.exe carry the same number
+local getMeta = (C_AddOns and C_AddOns.GetAddOnMetadata) or GetAddOnMetadata
+local RELEASE = getMeta and getMeta(ADDON, "Version") or "?"
 
 local f = CreateFrame("Frame")
 local db, char
@@ -88,6 +91,7 @@ local function initChar()
   db.chars[key] = db.chars[key] or {}
   char = db.chars[key]
   char.guid = playerGUID
+  char.addonVersion = RELEASE
 
   local _, class = UnitClass("player")
   local _, race = UnitRace("player")
@@ -426,7 +430,7 @@ function handlers.PLAYER_LOGIN()
   snapshot()
   C_Timer.After(3, requestPlayed)
   C_Timer.After(60, sweep)
-  msg(("tracking %s (level %d). |cffffff00/nh|r for status."):format(playerName, UnitLevel("player")))
+  msg(("v%s tracking %s (level %d). |cffffff00/nh|r for status."):format(RELEASE, playerName, UnitLevel("player")))
 end
 
 function handlers.PLAYER_LOGOUT() snapshot() end
@@ -519,7 +523,7 @@ SlashCmdList.NICKHUB = function(input)
     snapshot()
     local kills = #char.kills
     local quests = #char.quests
-    msg(("Lvl %d | %s played | %d kills | %d quests | %d deaths | auto-sync %s"):format(
+    msg(("v%s | Lvl %d | %s played | %d kills | %d quests | %d deaths | auto-sync %s"):format(RELEASE,
       char.level, char.played and SecondsToTime(char.played) or "?", kills, quests, #char.deaths,
       db.settings.autoSync and "on" or "off"))
     msg("/nh sync — save now   /nh auto on|off — offer a sync after each level   /nh reset")

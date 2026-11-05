@@ -31,6 +31,18 @@ ADDON_SRC = os.path.join(getattr(sys, "_MEIPASS", ""), "NickHubTracker") if FROZ
 FLAVOR = "_forever_"
 
 
+def release():
+    """The release this app was built for: the bundled addon's .toc Version line, e.g. "3.3.0"."""
+    try:
+        with open(os.path.join(ADDON_SRC, "NickHubTracker.toc"), encoding="utf-8") as fh:
+            for line in fh:
+                if line.startswith("## Version:"):
+                    return line.split(":", 1)[1].strip()
+    except OSError:
+        pass
+    return "?"
+
+
 def say(text=""):
     print(text, flush=True)
 
@@ -230,7 +242,7 @@ def test(args):
     """A pre-launch check of everything except the game itself. Its only upload is empty, so nothing reaches the leaderboard."""
     cfg_path = args.config or os.path.join(HERE, "config.json")
     problems = []
-    say("NickHub setup test")
+    say(f"NickHub v{release()} setup test")
     say()
     cfg = load_config(cfg_path)
     if args.wow_dir:
@@ -281,7 +293,7 @@ def run(args):
         cfg["wow_dir"] = args.wow_dir
     character = cfg.get("character") or None
 
-    say("NickHub uploader")
+    say(f"NickHub v{release()}")
     say(f"Racing as: {character or 'every character on this PC'}")
     game = find_game(cfg, cfg_path, interactive=not args.check)
     say(f"WoW Forever: {game}")
