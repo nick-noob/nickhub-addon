@@ -101,32 +101,23 @@ local function snapshot()
   char.money = GetMoney()
   char.zone = zone()
   char.updatedAt = now()
-  if playedBase then char.played = played() end
+  if playedBase then char.played, char.playedAt = played(), now() end
   local s = char.sessions[#char.sessions]
   if s then s.e = now() end
 end
 
 ---------------------------------------------------------------------------
--- /played without spamming chat
+-- /played
 ---------------------------------------------------------------------------
--- chat windows stop listening while we ask, instead of replacing Blizzard's
--- ChatFrame_DisplayTimePlayed, which taints the chat UI on newer clients
-local muted = {}
-local function unmuteChat()
-  for _, cf in ipairs(muted) do cf:RegisterEvent("TIME_PLAYED_MSG") end
-  muted = {}
-end
+-- WoW Forever blocks an addon asking for /played outside a keypress, so the addon asks only
+-- from /nh and otherwise listens for the player's own /played (TIME_PLAYED_MSG)
 
-local function requestPlayed()
-  for i = 1, NUM_CHAT_WINDOWS or 10 do
-    local cf = _G["ChatFrame" .. i]
-    if cf and cf:IsEventRegistered("TIME_PLAYED_MSG") then
-      cf:UnregisterEvent("TIME_PLAYED_MSG")
-      table.insert(muted, cf)
-    end
+-- a /reload (such as /nh sync) saved /played moments ago, so carry it over instead of asking
+local function restorePlayed()
+  local gap = char.playedAt and (now() - char.playedAt)
+  if char.played and gap and gap >= 0 and gap < 60 then
+    playedBase, playedAt = char.played + gap, GetTime()
   end
-  RequestTimePlayed()
-  C_Timer.After(5, unmuteChat) -- in case no answer comes
 end
 
 ---------------------------------------------------------------------------
@@ -330,8 +321,6 @@ local function onLevelUp(level)
   char.levels[level] = { t = now(), p = played(), z = zone(), m = GetMoney() }
   msg(("Level %d logged%s. Type |cffffff00/nh sync|r to push it to nickhub.com."):format(
     level, played() and (" at " .. SecondsToTime(played())) or ""))
-  -- refine with an exact /played a moment later
-  C_Timer.After(2, requestPlayed)
   if db.settings.autoSync then C_Timer.After(3, function() trySync(false) end) end
 end
 
@@ -379,16 +368,16 @@ function handlers.PLAYER_LOGIN()
   initChar()
   lastXP, lastMax, lastLvl = UnitXP("player"), UnitXPMax("player"), UnitLevel("player")
   onZoneChange()
+  restorePlayed()
   snapshot()
-  C_Timer.After(3, requestPlayed)
   C_Timer.After(60, sweep)
   msg(("tracking %s (level %d). |cffffff00/nh|r for status."):format(playerName, UnitLevel("player")))
+  if not playedBase then msg("type |cffffff00/nh|r or /played once so your levels get a time played.") end
 end
 
 function handlers.PLAYER_LOGOUT() snapshot() end
 
 function handlers.TIME_PLAYED_MSG(total)
-  C_Timer.After(0, unmuteChat) -- after this message, so the chat windows don't print it
   playedBase, playedAt = total, GetTime()
   char.played = total
   -- backfill any level entry recorded before /played was known
@@ -455,6 +444,7 @@ SlashCmdList.NICKHUB = function(input)
       msg("this wipes everything logged for this character. Type |cffffff00/nh reset confirm|r to do it.")
     end
   else
+    if not playedBase then RequestTimePlayed() end
     snapshot()
     local kills = #char.kills
     local quests = #char.quests

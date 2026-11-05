@@ -71,12 +71,7 @@ COMBATLOG_XPGAIN_FIRSTPERSON = "%s dies, you gain %d experience."
 COMBATLOG_XPGAIN_FIRSTPERSON_UNNAMED = "You gain %d experience."
 DEFAULT_CHAT_FRAME = { AddMessage = function(_, t) if VERBOSE then print("[chat] " .. t) end end }
 local playedPrinted = 0
-NUM_CHAT_WINDOWS = 1
-ChatFrame1 = { events = { TIME_PLAYED_MSG = true } }
-function ChatFrame1:RegisterEvent(e) self.events[e] = true end
-function ChatFrame1:UnregisterEvent(e) self.events[e] = nil end
-function ChatFrame1:IsEventRegistered(e) return self.events[e] == true end
-function ChatFrame_DisplayTimePlayed() if ChatFrame1.events.TIME_PLAYED_MSG then playedPrinted = playedPrinted + 1 end end
+function ChatFrame_DisplayTimePlayed() playedPrinted = playedPrinted + 1 end
 StaticPopupDialogs = {}
 local popups = 0
 function StaticPopup_Show() popups = popups + 1 end
@@ -101,14 +96,23 @@ function CreateFrame()
   return frame
 end
 local function fire(e, ...) if frame.events[e] then frame.fn(frame, e, ...) end end
-function RequestTimePlayed() C_Timer.After(0.2, function() fire("TIME_PLAYED_MSG", math.floor(playedTotal), 0); ChatFrame_DisplayTimePlayed() end) end
-function PLAYER_TYPES_PLAYED() RequestTimePlayed() end -- the player typing /played themselves
+-- like WoW Forever, /played can only be asked for right after a keypress
+local keypress, forbidden = false, 0
+function RequestTimePlayed()
+  if not keypress then forbidden = forbidden + 1; fire("ADDON_ACTION_FORBIDDEN", "NickHubTracker", "UNKNOWN()"); return end
+  C_Timer.After(0.2, function() fire("TIME_PLAYED_MSG", math.floor(playedTotal), 0); ChatFrame_DisplayTimePlayed() end)
+end
+local function typeSlash(cmd) keypress = true; SlashCmdList.NICKHUB(cmd); keypress = false end
 
 -- ---------- load addon ----------
 local chunk = assert(loadfile(ADDON_PATH))
-chunk("NickHubTracker", {})
-fire("PLAYER_LOGIN")
-advance(5)
+local function login()
+  chunk("NickHubTracker", {})
+  fire("PLAYER_LOGIN")
+  advance(5)
+end
+login()
+typeSlash("") -- the player checks /nh once, which learns /played
 
 -- ---------- world data ----------
 local ZONES = {
@@ -212,8 +216,11 @@ end
 
 -- ---------- simulate ----------
 local targetLevel = TARGET_LEVEL or 60
-local lastZone
+local lastZone, reloaded
 while P.level < targetLevel do
+  if P.level >= 10 and not reloaded then -- /nh sync reloads the UI; /played should carry over
+    typeSlash("sync"); advance(4); login(); reloaded = true
+  end
   local z = zoneFor(P.level)
   if z[2] ~= lastZone then P.zone = z[2]; fire("ZONE_CHANGED_NEW_AREA"); lastZone = z[2]; advance(120) end
   local r = math.random()
@@ -227,9 +234,7 @@ while P.level < targetLevel do
 end
 advance(10)
 fire("PLAYER_LOGOUT")
-
-PLAYER_TYPES_PLAYED(); advance(1) -- a manual /played after the run should print
-RESULT = { db = NickHubTrackerDB, playedPrinted = playedPrinted, popups = popups, played = math.floor(playedTotal) }
+RESULT = { db = NickHubTrackerDB, playedPrinted = playedPrinted, popups = popups, played = math.floor(playedTotal), forbidden = forbidden }
 
 -- ---------- WoW-style serializer ----------
 local function key(k)

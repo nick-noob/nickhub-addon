@@ -18,11 +18,12 @@ g.SEED = 7
 g.NO_CLEU = os.environ.get("NO_CLEU") == "1"  # simulate a client that hides the combat log
 lua.execute(open(os.path.join(root, "tools", "sim.lua")).read())
 res = g.RESULT
-print("sim played:", res.played, "| /played chat lines leaked:", res.playedPrinted, "| sync popups:", res.popups)
+print("sim played:", res.played, "| /played chat lines:", res.playedPrinted, "| blocked calls:", res.forbidden, "| sync popups:", res.popups)
 
 payload = up.build_payload(out_sv)
 c = next(iter(payload["chars"].values()))
 kills = c["kills"]
+print("without played: kills", sum(1 for k in kills if k.get("p") is None), "| levels", sum(1 for v in c["levels"].values() if v.get("p") is None))
 print("level", c["level"], "| played", c.get("played"), "| kills", len(kills), "| with xp", sum(1 for k in kills if "x" in k))
 print("quests", len(c["quests"]), "titled", sum(1 for q in c["quests"] if q.get("title")), "| deaths", len(c["deaths"]), "| pet deaths", c["petDeaths"])
 print("levels logged", len(c["levels"]), "keys sample", list(c["levels"])[:3], "| npcs", len(c["npcs"]))
