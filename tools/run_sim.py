@@ -18,7 +18,7 @@ g.SEED = 7
 g.NO_CLEU = os.environ.get("NO_CLEU") == "1"  # simulate a client that hides the combat log
 lua.execute(open(os.path.join(root, "tools", "sim.lua")).read())
 res = g.RESULT
-print("sim played:", res.played, "| /played chat lines:", res.playedPrinted, "| blocked calls:", res.forbidden, "| sync popups:", res.popups)
+print("sim played:", res.played, "| /played chat lines (expect 1, the player's own):", res.playedPrinted, "| blocked calls:", res.forbidden, "| sync popups:", res.popups)
 
 payload = up.build_payload(out_sv)
 c = next(iter(payload["chars"].values()))

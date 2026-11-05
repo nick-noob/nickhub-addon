@@ -80,6 +80,15 @@ From Windows, commit and push site changes, then ask Nick to deploy them from th
 
 If the addon shows as **out of date**, tick "Load out of date AddOns". **Incompatible** means the client's interface number is missing from the `.toc` Interface line, and the checkbox can't override it. The number comes from the version at the bottom-left of the login screen (1.60.1 → 16001) or `/dump select(4, GetBuildInfo())`. Forever shipped as 1.60.1 (build 70755) on 2026-11-02, and the `.toc` lists 16000–16005 to cover launch-day patches. A `.toc` change also needs a new release and re-sent racer zips, because `NickHub.exe` bundles the addon.
 
+## WoW Forever client quirks (found on launch day, 2026-11-04)
+
+- **Interface number:** the client is 1.60.x, so the `.toc` lists 16000–16005. A version outside that list shows the addon as **Incompatible**.
+- **Names:** `UnitName` returns only the first name ("Shrim"), so keys look like `<realm>-Shrim`. The uploader and the Worker match a racer's registered full name or its first word, and the site shows the full name.
+- **No combat log:** registering `COMBAT_LOG_EVENT_UNFILTERED` is a forbidden action there. It caused a "blocked from an action" popup (`UNKNOWN()`) on every load, so the addon skips it on interface 16000–19999. Kills come from the "X dies, you gain N experience" messages instead, so killed-by on deaths and pet deaths stay blank.
+- **/played:** the timed `RequestTimePlayed` after login and level-up works. Don't replace `ChatFrame_DisplayTimePlayed`; the addon mutes the chat windows instead.
+- **Blocked calls:** if WoW blocks one, the addon prints "WoW blocked a call to …" in chat.
+- **Testing:** `NO_CLEU=1 python tools/run_sim.py` simulates the Forever client.
+
 ## Friends leveling race
 
 `/how-the-race-works` explains the race to friends, with a sample leaderboard of made-up racers.
