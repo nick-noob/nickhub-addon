@@ -42,7 +42,8 @@ jobs:
             ["version"] = 1,
             ["chars"] = {
               ["Forever-Ci Racer"] = { ["name"] = "Ci Racer", ["level"] = 3, ["updatedAt"] = 1, ["kills"] = { { ["k"] = "1" } } },
-              ["Forever-Some Alt"] = { ["name"] = "Some Alt", ["level"] = 1 },
+              ["Forever-Some Alt"] = { ["name"] = "Some Alt", ["level"] = 1, ["guid"] = "Player-1-0000000A" },
+              ["Forever-Some"] = { ["name"] = "Some", ["level"] = 4 },
             },
           }
           '@
@@ -55,7 +56,8 @@ jobs:
           if ($out -notmatch "Addon: installed") { throw "addon wasn't installed" }
           if (-not (Test-Path (Join-Path $wow "_forever_\Interface\AddOns\NickHubTracker\NickHubTracker.toc"))) { throw "addon files missing" }
           if ($out -notmatch "Would upload: Forever-Ci Racer: lvl 3") { throw "saved file wasn't read" }
-          if ($out -notmatch "Forever-Some Alt") { throw "alts weren't included" }
+          if ($out -notmatch "Forever-Some Alt") { throw "the racer's other characters weren't included" }
+          if ($out -match "Forever-Some:") { throw "an old first-name entry without a guid was uploaded" }
 
           $again = & .\dist\NickHub.exe --check --wow-dir $wow --config $cfg | Out-String
           if ($again -notmatch "Addon: up to date") { throw "second run reinstalled the addon" }
