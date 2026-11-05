@@ -83,6 +83,8 @@ function GetQuestID() return nil end
 function GetQuestLogTitle(i) return questTitle end
 
 -- ---------- events ----------
+local forbidden = 0
+function GetBuildInfo() return "1.60.1", "70755", "Nov 2 2026", NO_CLEU and 16001 or 11508 end
 local frame
 local cleu
 function CombatLogGetCurrentEventInfo() return table.unpack(cleu, 1, 15) end
@@ -90,14 +92,14 @@ function CreateFrame()
   frame = { events = {} }
   function frame:SetScript(_, fn) self.fn = fn end
   function frame:RegisterEvent(e)
-    if NO_CLEU and e == "COMBAT_LOG_EVENT_UNFILTERED" then error("unknown event") end -- like WoW Forever
+    if NO_CLEU and e == "COMBAT_LOG_EVENT_UNFILTERED" then forbidden = forbidden + 1; return end -- like WoW Forever
     self.events[e] = true
   end
   return frame
 end
 local function fire(e, ...) if frame.events[e] then frame.fn(frame, e, ...) end end
 -- like WoW Forever, /played can only be asked for right after a keypress
-local keypress, forbidden = false, 0
+local keypress = false
 function RequestTimePlayed()
   if not keypress then forbidden = forbidden + 1; fire("ADDON_ACTION_FORBIDDEN", "NickHubTracker", "UNKNOWN()"); return end
   C_Timer.After(0.2, function() fire("TIME_PLAYED_MSG", math.floor(playedTotal), 0); ChatFrame_DisplayTimePlayed() end)

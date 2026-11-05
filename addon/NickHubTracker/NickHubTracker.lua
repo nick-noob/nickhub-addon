@@ -417,8 +417,14 @@ f:SetScript("OnEvent", function(_, event, ...)
   if event ~= "PLAYER_LOGIN" and not char and h ~= onBlocked then return end
   if h then h(...) end
 end)
+-- WoW Forever (interface 16000+) treats registering for the combat log as a forbidden action and
+-- shows a "blocked from an action" popup on every load, so skip it there; kills come from XP messages
+local interface = select(4, GetBuildInfo()) or 0
+local noCombatLog = interface >= 16000 and interface < 20000
 for event in pairs(handlers) do
-  pcall(f.RegisterEvent, f, event) -- ignore events a client doesn't have
+  if not (noCombatLog and event == "COMBAT_LOG_EVENT_UNFILTERED") then
+    pcall(f.RegisterEvent, f, event) -- ignore events a client doesn't have
+  end
 end
 
 ---------------------------------------------------------------------------
