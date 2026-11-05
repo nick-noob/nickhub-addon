@@ -171,18 +171,30 @@ local lastAttacker
 local XP_PATTERN = fmtToPattern(COMBATLOG_XPGAIN_FIRSTPERSON)
 local XP_PATTERN_UNNAMED = fmtToPattern(COMBATLOG_XPGAIN_FIRSTPERSON_UNNAMED)
 
+-- the modern client (WoW Forever) hides enemy details in instance combat as "secret values",
+-- and using one is an error, so such a unit is skipped until it can be read
+local function hidden(...)
+  if not issecretvalue then return false end
+  for i = 1, select("#", ...) do
+    if issecretvalue((select(i, ...))) then return true end
+  end
+  return false
+end
+
 local function learnUnit(unit)
-  if not UnitExists(unit) or UnitIsPlayer(unit) then return end
-  local guid = UnitGUID(unit)
+  local exists, isPlayer = UnitExists(unit), UnitIsPlayer(unit)
+  if hidden(exists, isPlayer) or not exists or isPlayer then return end
+  local guid, name, lvl = UnitGUID(unit), UnitName(unit), UnitLevel(unit)
+  local ctype, cl = UnitCreatureType(unit), UnitClassification(unit)
+  if hidden(guid, name, lvl, ctype, cl) then return end
   local k = npcKey(guid)
   if not k then return end
-  local lvl = UnitLevel(unit)
   guidLevel[guid] = lvl
-  levelByName[UnitName(unit) or ""] = lvl
-  local n = char.npcs[k] or { n = UnitName(unit), c = 0 }
-  n.n = UnitName(unit) or n.n
-  n.type = UnitCreatureType(unit) or n.type
-  n.cl = UnitClassification(unit) or n.cl
+  levelByName[name or ""] = lvl
+  local n = char.npcs[k] or { n = name, c = 0 }
+  n.n = name or n.n
+  n.type = ctype or n.type
+  n.cl = cl or n.cl
   if lvl and lvl > 0 then
     n.minL = math.min(n.minL or lvl, lvl)
     n.maxL = math.max(n.maxL or lvl, lvl)
@@ -455,10 +467,21 @@ end
 handlers.ADDON_ACTION_FORBIDDEN = onBlocked
 handlers.ADDON_ACTION_BLOCKED = onBlocked
 
+-- a failing handler mustn't flood the screen (WoW then offers to disable the addon), so errors
+-- are caught, the latest rides along with the next sync as lastError, and chat hears once
+local errorSaid
 f:SetScript("OnEvent", function(_, event, ...)
   local h = handlers[event]
-  if event ~= "PLAYER_LOGIN" and not char and h ~= onBlocked then return end
-  if h then h(...) end
+  if not h or (event ~= "PLAYER_LOGIN" and not char and h ~= onBlocked) then return end
+  local ok, err = pcall(h, ...)
+  if not ok then
+    local where = char or db
+    if where then where.lastError = { e = tostring(err):sub(1, 300), ev = event, t = now() } end
+    if not errorSaid then
+      errorSaid = true
+      msg("hit an error and kept tracking. It goes up with your next sync so Nick can see it.")
+    end
+  end
 end)
 -- WoW Forever (interface 16000+) treats registering for the combat log as a forbidden action and
 -- shows a "blocked from an action" popup on every load, so skip it there; kills come from XP messages

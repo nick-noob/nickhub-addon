@@ -16,6 +16,7 @@ g.OUT_PATH = out_sv
 g.TARGET_LEVEL = target
 g.SEED = 7
 g.NO_CLEU = os.environ.get("NO_CLEU") == "1"  # simulate a client that hides the combat log
+g.SECRETS = os.environ.get("SECRETS") == "1"  # simulate hidden enemy details, as in instance combat
 lua.execute(open(os.path.join(root, "tools", "sim.lua")).read())
 res = g.RESULT
 print("sim played:", res.played, "| /played chat lines (expect 1, the player's own):", res.playedPrinted, "| blocked calls:", res.forbidden, "| sync popups:", res.popups)
@@ -24,6 +25,7 @@ payload = up.build_payload(out_sv)
 c = next(iter(payload["chars"].values()))
 kills = c["kills"]
 print("without played: kills", sum(1 for k in kills if k.get("p") is None), "| levels", sum(1 for v in c["levels"].values() if v.get("p") is None))
+print("last error:", c.get("lastError"), "| kills with a mob type:", sum(1 for k in kills if c["npcs"].get(k["k"], {}).get("type")))
 print("level", c["level"], "| played", c.get("played"), "| kills", len(kills), "| with xp", sum(1 for k in kills if "x" in k))
 print("quests", len(c["quests"]), "titled", sum(1 for q in c["quests"] if q.get("title")), "| deaths", len(c["deaths"]), "| pet deaths", c["petDeaths"])
 print("levels logged", len(c["levels"]), "keys sample", list(c["levels"])[:3], "| npcs", len(c["npcs"]))

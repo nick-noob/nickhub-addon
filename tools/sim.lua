@@ -67,6 +67,19 @@ function UnitGUID(u)
 end
 function UnitCreatureType(u) return units[u] and units[u].ctype end
 function UnitClassification(u) return units[u] and units[u].class or "normal" end
+-- SECRETS=1 is like a modern client in instance combat: enemy details come back as secret values,
+-- and using one is an error
+if SECRETS then
+  local SECRET = setmetatable({}, { __index = function() error("attempt to index a secret value") end,
+    __lt = function() error("attempt to compare a secret value") end,
+    __le = function() error("attempt to compare a secret value") end,
+    __concat = function() error("attempt to concatenate a secret value") end })
+  function issecretvalue(v) return v == SECRET end
+  for _, fn in ipairs({ "UnitGUID", "UnitName", "UnitLevel", "UnitCreatureType", "UnitClassification" }) do
+    local real = _G[fn]
+    _G[fn] = function(u, ...) if u ~= "player" and u ~= "pet" and units[u] then return SECRET end return real(u, ...) end
+  end
+end
 function SecondsToTime(s) return string.format("%dh %dm", s // 3600, (s % 3600) // 60) end
 
 COMBATLOG_OBJECT_AFFILIATION_MINE = 0x1
