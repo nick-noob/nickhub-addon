@@ -59,6 +59,7 @@ function summarize(c) {
     level: c.level, xp: c.xp, xpMax: c.xpMax, played: c.played, updatedAt: c.updatedAt, startedAt: c.startedAt,
     zone: c.zone, kills: (c.kills || []).length, quests: (c.quests || []).length,
     deaths: (c.deaths || []).length,
+    zonesSeen: new Set([...(c.zones || []).map((z) => z && z.z), c.zone].filter(Boolean)).size,
     reached60: c.levels?.["60"]?.t ?? null,
     addon: c.addonVersion ?? null,  // which release this racer runs, for troubleshooting
   };

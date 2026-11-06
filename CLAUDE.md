@@ -101,7 +101,7 @@ If the addon shows as **out of date**, tick "Load out of date AddOns". **Incompa
 `/how-the-race-works` explains the race to friends, with a sample leaderboard of made-up racers.
 
 - **Racers:** Nick plus 3 friends, all on Windows.
-- **Winner:** the first to reach 60 on the calendar. Rank by level, then XP. The winner comes from the level-60 timestamp, which uses the game server's clock.
+- **Winner:** the first to reach 60 (real time, not /played). Rank by level, then XP. The winner comes from the level-60 timestamp, which uses the game server's clock.
 
 Built (2026-11-03): per-racer passwords (`scripts/racers.py`), per-character storage, `/api/summary` and `/api/char/<key>`, both read from D1 without caching.
 - **Leaderboard:** `index.html` ranks finished racers by who hit 60 first, then everyone else by level, then XP. It shows a race chart from each racer's level timeline and group records, and refreshes every 20 seconds.

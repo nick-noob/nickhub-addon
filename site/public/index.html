@@ -5,9 +5,9 @@
 <script>try { var t = localStorage.getItem("theme"); if (t === "dark" || t === "light") document.documentElement.dataset.theme = t; } catch (e) {}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>NickHub · Race to 60</title>
-<meta name="description" content="A WoW Forever leveling race between friends. First to level 60 on the calendar wins.">
+<meta name="description" content="A WoW Forever leveling race between friends. First to level 60 wins.">
 <meta property="og:title" content="NickHub · Race to 60">
-<meta property="og:description" content="A WoW Forever leveling race between friends. First to level 60 on the calendar wins.">
+<meta property="og:description" content="A WoW Forever leveling race between friends. First to level 60 wins.">
 <meta property="og:url" content="https://nickhub.com/">
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -197,7 +197,7 @@ footer a { color: inherit; }
   <section class="hero">
     <p class="eyebrow">WoW Forever · Race to 60</p>
     <h1>The race to 60</h1>
-    <p class="sub" id="sub">First to level 60 on the calendar wins.</p>
+    <p class="sub" id="sub">First to level 60 wins.</p>
     <div class="winner" id="winner" hidden></div>
   </section>
 
@@ -275,10 +275,10 @@ footer a { color: inherit; }
     const ranked = standings(chars);
     if (!ranked.length) {
       $("board").innerHTML = `<div class="empty"><b>No racers on the board yet</b>Everyone appears here after their first /nh sync. Want a peek? Here's a <a href="/racer?demo">sample racer profile</a>.</div>`;
-      $("sub").textContent = "First to level 60 on the calendar wins.";
+      $("sub").textContent = "First to level 60 wins.";
       return;
     }
-    $("sub").textContent = `First to level 60 on the calendar wins. ${ranked.length} racer${ranked.length === 1 ? "" : "s"} on the board.`;
+    $("sub").textContent = `First to level 60 wins. ${ranked.length} racer${ranked.length === 1 ? "" : "s"} on the board.`;
     $("board").innerHTML = ranked.map((c, i) => {
       const lv = c.level || 0, done = lv >= 60;
       const pct = !done && c.xpMax ? Math.min(100, ((c.xp || 0) / c.xpMax) * 100) : 0;
@@ -304,11 +304,11 @@ footer a { color: inherit; }
 
   function renderRecords() {
     const top = (field) => chars.filter((c) => c[field]).sort((a, b) => b[field] - a[field])[0];
-    const kills = top("kills"), quests = top("quests"), deaths = top("deaths");
+    const kills = top("kills"), quests = top("quests"), explorer = top("zonesSeen");
     const records = chars.length > 1 ? [
       kills && ["Most kills", kills.name, `${fmtInt(kills.kills)} slain`],
       quests && ["Most quests", quests.name, `${fmtInt(quests.quests)} turned in`],
-      deaths && ["Most deaths", deaths.name, `${fmtInt(deaths.deaths)} and counting`],
+      explorer && ["Globetrotter", explorer.name, `${fmtInt(explorer.zonesSeen)} zones explored`],
     ].filter(Boolean) : [];
     $("records").innerHTML = records.map(([k, v, s]) => `<div class="rec"><div class="k">${k}</div><div class="v">${esc(v)}</div><div class="s">${esc(s)}</div></div>`).join("");
   }
