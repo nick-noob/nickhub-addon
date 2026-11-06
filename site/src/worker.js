@@ -109,6 +109,9 @@ async function ingest(request, env) {
     if (!c || typeof c !== "object") { skipped.push(key); continue; }
     const primary = isMain(key, main);
     if (primary && !who.admin) c.name = who.character;
+    // WoW Forever reports a wrong level (5 too low) at logout, and older addons saved it, so a
+    // character is never below the highest level-up it logged
+    c.level = Math.max(c.level || 0, ...Object.keys(c.levels || {}).map(Number).filter(Number.isFinite));
     const res = await upsert.bind(key, JSON.stringify(summarize(c)), JSON.stringify(timeline(c)),
       await gzip(JSON.stringify(c)), c.updatedAt || 0, owner, who.admin ? 1 : 0, primary ? 1 : 0).run();
     if (!res.meta.changes) { skipped.push(key); continue; }

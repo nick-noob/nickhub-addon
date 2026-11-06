@@ -21,7 +21,15 @@ These are open, or are limits of the WoW Forever client rather than bugs we can 
 
 ---
 
-## v3.4.0 (Nov 5): every release shows its version
+## v3.4.0 (Nov 6): levels no longer drop at logout, and every release shows its version
+
+**Issue:** after logging off for the night, everyone dropped exactly 5 levels on the leaderboard (22 to 17, 21 to 16, 20 to 15), and the race chart lines fell at their last point.
+
+**Cause:** the addon takes a last snapshot at logout, and while logging out the Forever client reports a level 5 too low and an empty XP bar. The level-up history was right all along.
+
+**Fix:**
+- **Addon:** the saved level never goes down. It's kept current as you gain XP, and an XP reading with no XP bar is ignored.
+- **Worker:** it never saves a character below its highest logged level-up, so the board corrects itself on each racer's next sync, even on older versions.
 
 **Asked for:** an easy way to tell which version each racer has.
 

@@ -16,6 +16,7 @@ g.OUT_PATH = out_sv
 g.TARGET_LEVEL = target
 g.SEED = 7
 g.NO_CLEU = os.environ.get("NO_CLEU") == "1"  # simulate a client that hides the combat log
+g.BAD_LOGOUT = os.environ.get("BAD_LOGOUT") == "1"  # simulate Forever's wrong level and XP at logout
 g.SECRETS = os.environ.get("SECRETS") == "1"  # simulate hidden enemy details, as in instance combat
 lua.execute(open(os.path.join(root, "tools", "sim.lua")).read())
 res = g.RESULT

@@ -121,9 +121,13 @@ end
 
 local function snapshot()
   if not char then return end
-  char.level = UnitLevel("player")
-  char.xp = UnitXP("player")
-  char.xpMax = UnitXPMax("player")
+  -- WoW Forever reports a level 5 too low and an empty XP bar while logging out, so the level never
+  -- goes down and an XP reading with no bar is ignored
+  local lvl, xpMax = UnitLevel("player"), UnitXPMax("player")
+  char.level = math.max(char.level or 0, lvl or 0, highestLevel(char))
+  if lvl == char.level and (xpMax or 0) > 0 then
+    char.xp, char.xpMax = UnitXP("player"), xpMax
+  end
   char.rested = GetXPExhaustion() or 0
   char.money = GetMoney()
   char.zone = zone()
@@ -324,6 +328,8 @@ local function onXPUpdate()
     if delta and delta > 0 then char.xpGained.total = char.xpGained.total + delta end
   end
   lastXP, lastMax, lastLvl = xp, max, lvl
+  -- keep the saved level and XP current while playing, so a bad reading at logout has nothing to replace
+  if max > 0 and lvl >= (char.level or 0) then char.level, char.xp, char.xpMax = lvl, xp, max end
 end
 
 ---------------------------------------------------------------------------

@@ -251,7 +251,13 @@ while P.level < targetLevel do
   end
 end
 advance(10)
+local realLevel, realXP = P.level, P.xp
+if BAD_LOGOUT then -- like WoW Forever while logging out: level 5 too low, no XP bar
+  P.level, P.xp = math.max(1, P.level - 5), 0
+  XPMAX[P.level] = 0
+end
 fire("PLAYER_LOGOUT")
+P.level, P.xp = realLevel, realXP
 RequestTimePlayed(); advance(1) -- the player's own /played should still print
 RESULT = { db = NickHubTrackerDB, playedPrinted = playedPrinted, popups = popups, played = math.floor(playedTotal), forbidden = forbidden }
 
